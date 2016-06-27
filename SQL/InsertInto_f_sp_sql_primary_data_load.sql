@@ -2071,7 +2071,7 @@ END;#';
                            END
                               TENDER_LEVEL,
                            PL.JOINT_AUCTION AS IS_UNION_TRADE,
-                           oos.PROTOCOL_DATE AS CREATE_PROTOCOL_DATE,
+                           nvl(oos.PROTOCOL_DATE, not_ea_oos.protocol_created_date) AS CREATE_PROTOCOL_DATE,                          
                            pe.REG_NUMBER,
                            --pv.TRADE_OBJECT_TYPE -- string value as ID_TORG_TYPE,                   
                            0 AS IS_44FZ,
@@ -2131,8 +2131,16 @@ END;#';
                     LEFT JOIN D_PROCEDURE_DATE@EAIST_MOS_SHARD pd ON pd.PROCEDURE_ID = pv.ID AND pd.DATE_TYPE = 'publicationDate' AND pd.deleted_date IS NULL
                     LEFT JOIN D_PROCEDURE_DATE@EAIST_MOS_SHARD pre ON pre.PROCEDURE_ID = pv.ID AND pre.DATE_TYPE = 'receivingEndDateTime' AND pre.deleted_date IS NULL
                     LEFT JOIN (SELECT PUBLISH_DATE,PROTOCOL_DATE,PROCEDURE_ENTITY_ID,ROW_NUMBER () OVER (PARTITION BY PROCEDURE_ENTITY_ID ORDER BY PROTOCOL_DATE DESC) rn
-                                         FROM D_OOS_FTP_PROTOCOL@EAIST_MOS_SHARD) oos
+                                         FROM D_OOS_FTP_PROTOCOL@EAIST_MOS_SHARD where PROTOCOL_TYPE='PPI') oos
                     ON oos.PROCEDURE_ENTITY_ID = pe.ID AND oos.rn = 1
+                    LEFT JOIN (select distinct protocol_created_date, procedure_id from (
+                        select com.*, 
+                                max(protocol_number) over (partition by procedure_Id) max_protocol,
+                                max(version) over (partition by procedure_Id, protocol_number) max_version,
+                                max(protocol_created_date) over (partition by procedure_Id, protocol_number, version) max_protocol_date
+                        from d_commission_session@eaist_mos_shard com  where session_type not in (1,18) and deleted_date is null
+                        ) where protocol_number= max_protocol and version=max_version and max_protocol_date=protocol_created_date) not_ea_oos
+                    ON not_ea_oos.procedure_id=pe.id
                     LEFT JOIN (SELECT distinct lv.joint_auction, pl.PROCEDURE_ENTITY_ID FROM D_PROCEDURE_LOT_ENTRY@EAIST_MOS_SHARD pl
                                         JOIN (select id , joint_auction from d_lot_version@eaist_mos_shard where deleted_date IS NULL ) lv 
                                         ON pl.lot_id = lv.id AND pl.is_actual = 1 and lv.joint_auction=1) pl
