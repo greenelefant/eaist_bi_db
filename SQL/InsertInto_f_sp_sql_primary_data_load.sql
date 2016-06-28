@@ -1,4 +1,4 @@
-/*
+﻿/*
   Скрипт вставки запросов в таблицу f_sp_sql_primary_data_load
     для заливки первичных данных
 */
@@ -3944,7 +3944,7 @@ END;#';
     rec_array(idx).is_actual := 1;
     rec_array(idx).sql_text := start_str || q'#
         insert into T_CONTRACT_SPEC
-          (ID, CONTRACT_ID, QUANTITY, UNIT_COST, COST_IN_RUBLE, VERSION_DATE, ID_DATA_SOURCE, OKPD_ID)
+          (ID, CONTRACT_ID, QUANTITY, UNIT_COST, COST_IN_RUBLE, VERSION_DATE, ID_DATA_SOURCE, OKPD_ID, KPGZ_ID)
         select        
           sp.ID as ID
           ,sp.CONTRACT_ID as CONTRACT_ID
@@ -3952,8 +3952,9 @@ END;#';
           ,sp.UNIT_COST as UNIT_PRICE
           ,sp.COST_IN_RUBLE as SUMM
           ,V_VERSION_DATE as version_date
-          ,V_ID_DATA_SOURCE as ID_DATA_SOURCE,
-          okpd_id
+          ,V_ID_DATA_SOURCE as ID_DATA_SOURCE
+          ,okpd_id
+	  ,kpgz_id
         from contract_specification@eaist_mos_rc sp;
 
     -- Привязка кол-ва обработанных строк
