@@ -3920,7 +3920,7 @@ END;#';
               
               LEFT JOIN (SELECT distinct type_id, reasontype_id, contract_id 
               FROM contract_stage@eaist_mos_rc ts
-              JOIN (select stage_id, type_id, reasontype_id, created_date, max(created_date) over (partition by id) max_created_date 
+              JOIN (select stage_id, type_id, reasontype_id, created_date, max(created_date) over (partition by stage_id) max_created_date 
                         from contract_stage_termination@eaist_mos_rc where deleted_date is null and is_actual=1) tts
               on ts.id=tts.stage_id and tts.created_date=tts.max_created_date and type_id is not null) tts
               on  tts.contract_id=con.id
