@@ -2075,7 +2075,7 @@ END;#';
                            pe.REG_NUMBER,
                            --pv.TRADE_OBJECT_TYPE -- string value as ID_TORG_TYPE,                   
                            0 AS IS_44FZ,
-                           pe.CUSTOMER_ID AS ID_ENTERPRISE_ENTITY,
+                           pv.ORGANIZER_ID AS ID_ENTERPRISE_ENTITY,
                            oos.PUBLISH_DATE AS PUBLISH_OOS_DATE,
                            oos.PROTOCOL_DATE AS LAST_PROTOCOL_DATE_FROM_OOS,
                            pe.CUSTOMER_ID,
@@ -2094,7 +2094,7 @@ END;#';
                            pre.PROCEDURE_DATE as REQUEST_END_DATE,
                            dates.first_pub_date,
                            dates.last_pub_date
-                    FROM (select id,entity_id, created_date, PROCUREMENT_SUBJECT,ACCOMODATION_LEVEL,UNSUCCESSFUL_PURCHASE,status_id,state_id from D_PROCEDURE_VERSION@EAIST_MOS_SHARD where deleted_date IS NULL) pv
+                    FROM (select id,entity_id, created_date, PROCUREMENT_SUBJECT,ACCOMODATION_LEVEL,UNSUCCESSFUL_PURCHASE,status_id,state_id, ORGANIZER_ID from D_PROCEDURE_VERSION@EAIST_MOS_SHARD where deleted_date IS NULL) pv
                     --Получаем дату создания версии когда статус перешел в опубликовано
                     LEFT JOIN (SELECT distinct entity_id, min(created_date) created_date FROM D_PROCEDURE_VERSION@eaist_mos_shard WHERE status_id=7 group by entity_id) pub_pv
                     on pub_pv.entity_id=pv.entity_id --and pub_pv.created_date=pv.created_date
