@@ -2173,7 +2173,7 @@ END;#';
     rec_array(idx).id_data_source := 2;
     rec_array(idx).is_actual := 1;
     rec_array(idx).sql_text := start_str || q'#
-        INSERT INTO REPORTS.T_LOT (ID,
+         INSERT INTO REPORTS.T_LOT (ID,
                                     CONCLUSION_REASON,
                                     COST,
                                     DESCRIPTION,
@@ -2219,7 +2219,7 @@ END;#';
                    li.NMC AS MAXIMUM_CONTRACT_COST,
                    lv.LOT_NAME,
                    lv.METHOD_OF_SUPPLIER_ID,
-                   pl.PROCEDURE_ID AS TENDER_ID,
+                   nvl(pl.PROCEDURE_ID,ple1.PROCEDURE_ID) AS TENDER_ID,
                    lv.bidding_on_unit_production AS IS_UNIT,
                    CASE
                       WHEN lv.SMP_TYPE = 'none' THEN 0
@@ -2347,7 +2347,10 @@ END;#';
                                                       JOIN D_LOT_STATUS_HISTORY@EAIST_MOS_SHARD stat
                                                       ON ver.id=stat.version_id
                                                       )) dates ON dates.entity_id=le.id
-                      
+                   left join 
+                      (select lle.lot_id, procedure_id from (select id, lot_id, root_lot_id, max(id) over (partition by lot_id) max_id from d_lot_lot_entry@eaist_mos_shard  where is_actual = 1) lle --ищем связь совместных лотов с главными совместными лотами
+                      left join d_procedure_lot_entry@eaist_mos_shard ple1 on lle.id=lle.max_id and ple1.lot_id = lle.root_lot_id and ple1.is_actual = 1 --ищем связь главных совместных лотов с процедурами
+                      where PROCEDURE_ID IN (SELECT ID FROM D_PROCEDURE_VERSION@EAIST_MOS_SHARD WHERE deleted_date IS NULL))ple1  on lv.id = ple1.lot_id
                    LEFT JOIN D_LOT_INDEX@EAIST_MOS_SHARD li
                       ON le.ID = li.ID
                    /*LEFT JOIN D_PROCEDURE_LOT_ENTRY@EAIST_MOS_SHARD pl
@@ -2374,6 +2377,7 @@ END;#';
                               GROUP BY LOT_ID) psle
                       ON lv.id = psle.LOT_ID
                   LEFT JOIN D_PROCEDURE_ENTITY@EAIST_MOS_SHARD pe ON pl.PROCEDURE_ENTITY_ID=pe.ID;
+
 
     -- Привязка кол-ва обработанных строк
     :V_ROWCOUNT := SQL%ROWCOUNT;
