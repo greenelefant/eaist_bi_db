@@ -4991,7 +4991,7 @@ END;#';
 
           select distinct
             --d.*,
-            win.ID||4, 
+            win.ID||4||(CASE WHEN l.joint_auction=1 or l.included_joint_auction=1 then l.id end), 
             l.id lot_id, 
             win.Participant_id, 
             win.journal_number, 
@@ -5010,7 +5010,7 @@ END;#';
                 join d_procedure_entity@eaist_mos_shard pe on win.procedure_id=pe.id and pe.deleted_date is null and pe.published_id is not null) win
           on d.journal_number=win.journal_number and d.oos_reg_number=win.oos_reg_number and d.oos_ftp_protocol_id=win.oos_ftp_protocol_id and win.rnk=1
           join (select id, registry_number from t_tender where version_date=V_VERSION_DATE and id_data_source=V_ID_DATA_SOURCE) t on d.oos_reg_number=t.registry_number
-          join (select id, tender_Id, version_date, customer_id from t_lot where version_date=V_VERSION_DATE and id_data_source=V_ID_DATA_SOURCE) l on l.tender_id=t.id
+          join (select id, tender_Id, version_date, customer_id, joint_auction, included_joint_auction from t_lot where version_date=V_VERSION_DATE and id_data_source=V_ID_DATA_SOURCE) l on l.tender_id=t.id
           left join (select lcag.id lnk_id, cust.grbs_code, lcag.version_date
                      from LNK_CUSTOMERS_ALL_LEVEL lcag
                     join sp_customer cust ON lcag.id_parent=cust.id||'_'||cust.id_DATA_source and lcag.version_date=cust.version_date and cust.connect_level=3
@@ -5038,15 +5038,14 @@ END;#';
                                            PRICE,
                                            ID_DATA_SOURCE,
                                            VERSION_DATE)
-          select distinct win.ID||4 winid, win.ID||4, d.APP_DATE, win.PRICE, V_ID_DATA_SOURCE id_Data_source, V_VERSION_DATE version_date 
+          select distinct win.ID||4||(CASE WHEN l.joint_auction=1 or l.included_joint_auction=1 then l.id end) winid, win.ID||4, d.APP_DATE, win.PRICE, V_ID_DATA_SOURCE id_Data_source, V_VERSION_DATE version_date 
           from D_EA_APPLICATION@eaist_mos_shard d
           join(select win.*, rank() over (partition by journal_number, oos_reg_number, oos_ftp_protocol_id order by price, added_at desc) rnk
                 from d_ea_winner@eaist_mos_shard win 
                 join d_procedure_entity@eaist_mos_shard pe on win.procedure_id=pe.id and pe.deleted_date is null and pe.published_id is not null) win
           on d.journal_number=win.journal_number and d.oos_reg_number=win.oos_reg_number and d.oos_ftp_protocol_id=win.oos_ftp_protocol_id and win.rnk=1
           join (select id, registry_number from t_tender where version_date= V_VERSION_DATE and id_data_source= V_ID_DATA_SOURCE) t on d.oos_reg_number=t.registry_number
-          join (select id, tender_Id from t_lot where version_date= V_VERSION_DATE and id_data_source= V_ID_DATA_SOURCE) l on l.tender_id=t.id;
-
+          join (select id, tender_Id, joint_auction, included_joint_auction from t_lot where version_date= V_VERSION_DATE and id_data_source= V_ID_DATA_SOURCE) l on l.tender_id=t.id;
     -- Привязка кол-ва обработанных строк
     :V_ROWCOUNT := SQL%ROWCOUNT;
 
