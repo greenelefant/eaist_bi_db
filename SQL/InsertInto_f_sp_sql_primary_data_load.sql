@@ -2131,7 +2131,7 @@ END;#';
                     LEFT JOIN D_PROCEDURE_DATE@EAIST_MOS_SHARD pd ON pd.PROCEDURE_ID = pv.ID AND pd.DATE_TYPE = 'publicationDate' AND pd.deleted_date IS NULL
                     LEFT JOIN D_PROCEDURE_DATE@EAIST_MOS_SHARD pre ON pre.PROCEDURE_ID = pv.ID AND pre.DATE_TYPE = 'receivingEndDateTime' AND pre.deleted_date IS NULL
                     LEFT JOIN (SELECT PUBLISH_DATE,PROTOCOL_DATE,PROCEDURE_ENTITY_ID,ROW_NUMBER () OVER (PARTITION BY PROCEDURE_ENTITY_ID ORDER BY PROTOCOL_DATE DESC) rn
-                                         FROM D_OOS_FTP_PROTOCOL@EAIST_MOS_SHARD where PROTOCOL_TYPE='PPI') oos
+                                         FROM D_OOS_FTP_PROTOCOL@EAIST_MOS_SHARD) oos
                     ON oos.PROCEDURE_ENTITY_ID = pe.ID AND oos.rn = 1
                     LEFT JOIN (select distinct protocol_created_date, procedure_id from (
                         select com.*, 
