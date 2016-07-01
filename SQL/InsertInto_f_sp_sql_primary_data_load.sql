@@ -2031,7 +2031,7 @@ END;#';
     rec_array(idx).id_data_source := 2;
     rec_array(idx).is_actual := 1;
     rec_array(idx).sql_text := start_str || q'#
-        INSERT INTO REPORTS.T_TENDER (ID,
+         INSERT INTO REPORTS.T_TENDER (ID,
                                                PUBLICATION_DATE,
                                                ID_TENDER_TYPE,
                                                SUBJECT,
@@ -2060,7 +2060,8 @@ END;#';
                                                REQUEST_END_DATE,
                                                FIRST_PUBLSIH_DATE,
                                                LAST_PUBLISH_DATE)
-                    SELECT pv.ID as Id1,
+
+SELECT pv.ID as Id1,
                            pd.PROCEDURE_DATE AS PUBLICATION_DATE,
                            pe.METHOD_OF_SUPPLIER_ID AS ID_TENDER_TYPE, --свой справчник в коде
                            pv.PROCUREMENT_SUBJECT,
@@ -2095,35 +2096,38 @@ END;#';
                            dates.first_pub_date,
                            dates.last_pub_date
                     FROM (select id,entity_id, created_date, PROCUREMENT_SUBJECT,ACCOMODATION_LEVEL,UNSUCCESSFUL_PURCHASE,status_id,state_id, ORGANIZER_ID from D_PROCEDURE_VERSION@EAIST_MOS_SHARD where deleted_date IS NULL) pv
-                    --Получаем дату создания версии когда статус перешел в опубликовано
-                    LEFT JOIN (SELECT distinct entity_id, min(created_date) created_date FROM D_PROCEDURE_VERSION@eaist_mos_shard WHERE status_id=7 group by entity_id) pub_pv
-                    on pub_pv.entity_id=pv.entity_id --and pub_pv.created_date=pv.created_date
-                     --Получаем дату создания версии когда статус перешел в отменено
-                    LEFT JOIN (SELECT distinct entity_id, min(created_date) created_date FROM D_PROCEDURE_VERSION@eaist_mos_shard WHERE status_id=9 group by entity_id) cancel_pv
-                    on cancel_pv.entity_id=pv.entity_id --and pub_pv.created_date=pv.created_date
+                    --Получаем дату создания версии когда статус перешел в опубликовано              
                     --Устраняем дубли в D_PROCEDURE_VERSION
                     JOIN (SELECT entity_id, max(created_date) created_date FROM D_PROCEDURE_VERSION@eaist_mos_shard WHERE deleted_date is null group by entity_id) max_pv
                     on max_pv.entity_id=pv.entity_id and max_pv.created_date=pv.created_date
                     --Устраняем дубли в D_PROCEDURE_ENTITY
                     JOIN (select all_p.* from D_PROCEDURE_ENTITY@EAIST_MOS_SHARD all_p
-                          /*join (select max_id.reg_number, max_id.oos_modification_number, max_id.id from
-                                (select reg_number, oos_modification_number,  max(id) id from D_PROCEDURE_ENTITY@EAIST_MOS_SHARD group by reg_number, oos_modification_number) max_id
-                                join (select reg_number, max(oos_modification_number) oos_modification_number from D_PROCEDURE_ENTITY@EAIST_MOS_SHARD group by reg_number) max_mod
-                                on max_id.reg_number=max_mod.reg_number and max_id.oos_modification_number=max_mod.oos_modification_number) max_p*/
-                            join (select reg_number,id from(
-                                  select 
-                                  reg_number,
-                                  oos_modification_number,
-                                  max(oos_modification_number) over (partition by reg_number) max_num,
-                                  updated_dt,
-                                  max(updated_dt) over (partition by reg_number, oos_modification_number) max_upd_dt,
-                                  id,
-                                  max(id) over (partition by reg_number, oos_modification_number, updated_dt) max_id           
-                                  from d_procedure_entity@eaist_mos_shard 
-                                  )where oos_modification_number=max_num and (updated_dt=max_upd_dt or max_upd_dt is null) and id=max_id) max_p   
-                          on all_p.id=max_p.id)pe 
+                            join (select reg_number,nvl(ent_id18,nvl(ent_id7, ent_id)) id
+                                  from(
+                                  select reg_number,
+                                                      max(case when status_id=18 and max_ver_status=version then id else null end) ent_id18,
+                                                      max(case when status_id=7 and max_ver_status=version then id else null end) ent_id7,
+                                                      max(case when version=max_ver then id else null end) ent_id                    
+                                                      
+                                                      
+                                                      from (select pe.*, pv.status_id, max(pe.version) over (partition by reg_number) max_ver, max(pe.version) over (partition by reg_number, status_id) max_ver_status 
+                                                      from D_PROCEDURE_ENTITY@eaist_mos_shard pe
+                                                      join (select id, entity_id, status_id, deleted_date from D_PROCEDURE_VERSION@eaist_mos_shard) pv 
+                                                      on pe.id=pv.entity_id 
+                                                      where (pe.published_id is null or pv.status_id in (7,18)) and pe.deleted_date is null and pv.deleted_date is null) dat
+                                                      group by reg_number)) filtr_p   
+                          on all_p.id=filtr_p.id)pe 
                           ON pe.ID = pv.entity_id
+                    
+                    
+                          
                     --Получаем общее число изменений по процедуре
+                    LEFT JOIN (SELECT distinct entity_id, min(created_date) created_date FROM D_PROCEDURE_VERSION@eaist_mos_shard WHERE status_id=7 group by entity_id) pub_pv
+                    on pub_pv.entity_id=pv.entity_id --and pub_pv.created_date=pv.created_date
+                     --Получаем дату создания версии когда статус перешел в отменено
+                    LEFT JOIN (SELECT distinct entity_id, min(created_date) created_date FROM D_PROCEDURE_VERSION@eaist_mos_shard WHERE status_id=9 group by entity_id) cancel_pv
+                    on cancel_pv.entity_id=pv.entity_id --and pub_pv.created_date=pv.created_date
+                    
                     LEFT JOIN (select count(*) change_count, pe.reg_number from D_PROCEDURE_ENTITY@EAIST_MOS_SHARD pe
                               JOIN D_PROCEDURE_VERSION@EAIST_MOS_SHARD pv ON pe.id=pv.entity_id
                               GROUP BY pe.reg_number) changeCount ON changeCount.reg_number=pe.reg_number
@@ -2131,7 +2135,7 @@ END;#';
                     LEFT JOIN D_PROCEDURE_DATE@EAIST_MOS_SHARD pd ON pd.PROCEDURE_ID = pv.ID AND pd.DATE_TYPE = 'publicationDate' AND pd.deleted_date IS NULL
                     LEFT JOIN D_PROCEDURE_DATE@EAIST_MOS_SHARD pre ON pre.PROCEDURE_ID = pv.ID AND pre.DATE_TYPE = 'receivingEndDateTime' AND pre.deleted_date IS NULL
                     LEFT JOIN (SELECT PUBLISH_DATE,PROTOCOL_DATE,PROCEDURE_ENTITY_ID,ROW_NUMBER () OVER (PARTITION BY PROCEDURE_ENTITY_ID ORDER BY PROTOCOL_DATE DESC) rn
-                                         FROM D_OOS_FTP_PROTOCOL@EAIST_MOS_SHARD) oos
+                                         FROM D_OOS_FTP_PROTOCOL@EAIST_MOS_SHARD where PROTOCOL_TYPE='PPI') oos
                     ON oos.PROCEDURE_ENTITY_ID = pe.ID AND oos.rn = 1
                     LEFT JOIN (select distinct protocol_created_date, procedure_id from (
                         select com.*, 
