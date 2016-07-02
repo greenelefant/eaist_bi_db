@@ -1,4 +1,4 @@
-﻿/*
+/*
   Скрипт вставки запросов в таблицу f_sp_sql_primary_data_load
     для заливки первичных данных
 */
@@ -1741,6 +1741,52 @@ END;#';
                        WHERE DELETED_DATE IS NULL) dnk on nk.ENTITY_ID=dnk.ENTITY_ID
             LEFT JOIN n_okpd@EAIST_MOS_NSI o ON nkn.OKPD_ID = o.id
             WHERE dnk.ID is null;
+
+    -- Привязка кол-ва обработанных строк
+    :V_ROWCOUNT := SQL%ROWCOUNT;
+
+END;#';
+
+    -- SP_KPGZ_MERGE [EAIST2]
+    idx := idx + 1;
+    rec_array(idx).table_name := 'SP_KPGZ';
+    rec_array(idx).sql_name := 'SP_KPGZ_MERGE [EAIST2]';
+    rec_array(idx).description := 'Обновление для задачи ускорения загрузки view SP_KPGZ_TREE_V';
+    rec_array(idx).execute_order := idx * 100;
+    rec_array(idx).id_data_source := 2;
+    rec_array(idx).is_actual := 1;
+    rec_array(idx).sql_text := start_str || q'#
+    merge into sp_kpgz dst
+    using (
+            select
+                  key_sort,
+                  kpgz_level,
+                  rownum rn,
+                  id,
+                  id_data_source ID_SOURCE,
+                  id_parent,
+                  id_data_source ID_PARENT_SOURCE, 
+                  level id_level,
+                  name as formatted_name,
+                  code
+                from (
+                        select
+                              key_sort,
+                              kpgz_level,
+                              id,
+                              id_data_source,
+                              case when id_parent is not null then id_parent else 0 end id_parent,
+                              '('||code||') ' || name name,
+                              code
+                            from sp_kpgz
+                            where trunc(version_date, 'dd') = V_VERSION_DATE and id_data_source = V_ID_DATA_SOURCE
+                        union
+                        select 1, 1, 0, 2, null, 'ВСЕ КПГЗ', '0' from dual
+                     )
+                connect by nocycle prior id = id_parent start with id = 0
+          ) src
+          on (dst.id = src.id and trunc(dst.version_date, 'dd') = V_VERSION_DATE and dst.id_data_source = V_ID_DATA_SOURCE)
+          when matched then update set dst.key_sort = src.rn, dst.kpgz_level = src.id_level;
 
     -- Привязка кол-ва обработанных строк
     :V_ROWCOUNT := SQL%ROWCOUNT;
