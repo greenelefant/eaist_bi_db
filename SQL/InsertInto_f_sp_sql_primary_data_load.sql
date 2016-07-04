@@ -95,12 +95,13 @@ END;#';
     rec_array(idx).id_data_source := 1;
     rec_array(idx).is_actual := 1;
     rec_array(idx).sql_text := start_str || q'#
-        insert into REPORTS.SP_ORGANIZATION(ID,ID_PARENT,INN,KPP,ORGANIZATION_TYPE,FULL_NAME,SHORT_NAME,ID_DATA_SOURCE,VERSION_DATE,IS_CUSTOMER,IS_SUPPLIER,ENTITY_ID,FORMATTED_NAME, CONNECT_LEVEL) 
-            select o.*,level from (
+        insert into REPORTS.SP_ORGANIZATION(ID,ID_PARENT,INN,KPP, OPEN_DATE_D,ORGANIZATION_TYPE,FULL_NAME,SHORT_NAME,ID_DATA_SOURCE,VERSION_DATE,IS_CUSTOMER,IS_SUPPLIER,ENTITY_ID,FORMATTED_NAME, CONNECT_LEVEL) 
+		select o.*,level from (
                             SELECT curr.ID,
                               curr.PARENT_ID,
                               curr.INN,
                               curr.KPP,
+                              curr.DATE_START,
                               curr.COMPANY_TYPE,
                               curr.FULL_NAME,
                               curr.NAME,
@@ -148,22 +149,22 @@ END;#';
     rec_array(idx).id_data_source := 1;
     rec_array(idx).is_actual := 1;
     rec_array(idx).sql_text := start_str || q'#
-        insert into SP_CUSTOMER (ID,ID_PARENT,FULL_NAME,SHORT_NAME,CONNECT_LEVEL,INN,KPP,IS_SMP,SPZ_CODE, ID_DATA_SOURCE,VERSION_DATE,S_KEY_SORT, FORMATTED_NAME )
-            select ID,ID_PARENT,FULL_NAME,SHORT_NAME,CONNECT_LEVEL,INN,KPP,IS_SMP,SPZ_CODE, ID_DATA_SOURCE,VERSION_DATE,S_KEY_SORT,
+        insert into SP_CUSTOMER (ID,ID_PARENT,FULL_NAME,SHORT_NAME,CONNECT_LEVEL,INN,KPP, OPEN_DATE_D,IS_SMP,SPZ_CODE, ID_DATA_SOURCE,VERSION_DATE,S_KEY_SORT, FORMATTED_NAME )
+            select ID,ID_PARENT,FULL_NAME,SHORT_NAME,CONNECT_LEVEL,INN,KPP, OPEN_DATE_D,IS_SMP,SPZ_CODE, ID_DATA_SOURCE,VERSION_DATE,S_KEY_SORT,
             FORMATE_NAME(FULL_NAME) from
               (  select cust.*,rownum s_key_sort from 
                  (
-                    select 0 ID,null ID_PARENT,'Москва' FULL_NAME,'Москва' SHORT_NAME,1 CONNECT_LEVEL,null INN,null KPP,null IS_SMP,null SPZ_CODE,V_ID_DATA_SOURCE ID_DATA_SOURCE,V_VERSION_DATE VERSION_DATE, '0' key_sort from dual
+                    select 0 ID,null ID_PARENT,'Москва' FULL_NAME,'Москва' SHORT_NAME,1 CONNECT_LEVEL,null INN,null KPP, null OPEN_DATE_D, null IS_SMP,null SPZ_CODE,V_ID_DATA_SOURCE ID_DATA_SOURCE,V_VERSION_DATE VERSION_DATE, '0' key_sort from dual
                      union all
-                    select id,0,regexp_replace(complex_name,'^[^[:alpha:]]{1,}',''),regexp_replace(complex_name,'^[^[:alpha:]]{1,}',''),2,null,null,null,null,V_ID_DATA_SOURCE ID_DATA_SOURCE,V_VERSION_DATE VERSION_DATE,to_char(id) key_sort
+                    select id,0,regexp_replace(complex_name,'^[^[:alpha:]]{1,}',''),regexp_replace(complex_name,'^[^[:alpha:]]{1,}',''),2,null, null, null,null,null,V_ID_DATA_SOURCE ID_DATA_SOURCE,V_VERSION_DATE VERSION_DATE,to_char(id) key_sort
                         from sp_complex where ID_DATA_SOURCE=V_ID_DATA_SOURCE and VERSION_DATE=V_VERSION_DATE
                      union all
-                    select v.id,v.id_complex,v.grbs,v.grbs,3,org.inn,org.kpp,null,null,V_ID_DATA_SOURCE ID_DATA_SOURCE,V_VERSION_DATE,v.grbs key_sort
+                    select v.id,v.id_complex,v.grbs,v.grbs,3,org.inn,org.kpp, open_date_d, null,null,V_ID_DATA_SOURCE ID_DATA_SOURCE,V_VERSION_DATE,v.grbs key_sort
                          from (select distinct id,grbs,id_complex from sp_department where ID_DATA_SOURCE=V_ID_DATA_SOURCE and VERSION_DATE=V_VERSION_DATE) v
                          join sp_organization org on v.id=org.id and org.id_data_source=V_ID_DATA_SOURCE and ORG.VERSION_DATE=V_VERSION_DATE
                      union all
-                    select uchr.id,uchr.vedom_id,uchr.FULL_NAME,uchr.SHORT_NAME,4 conn_level,uchr.INN,uchr.KPP,uchr.IS_SMP,uchr.SPZ_CODE,V_ID_DATA_SOURCE ID_DATA_SOURCE,V_VERSION_DATE VERSION_DATE,uchr.FULL_NAME key_sort
-                         from (select o.id,d.id vedom_id,d.id_complex,o.FULL_NAME,o.SHORT_NAME,o.INN,o.KPP,o.IS_SMP,o.SPZ_CODE,o.ID_DATA_SOURCE,o.VERSION_DATE from (select * from sp_department where id!=id_organization) d
+                    select uchr.id,uchr.vedom_id,uchr.FULL_NAME,uchr.SHORT_NAME,4 conn_level,uchr.INN,uchr.KPP, open_date_d, uchr.IS_SMP,uchr.SPZ_CODE,V_ID_DATA_SOURCE ID_DATA_SOURCE,V_VERSION_DATE VERSION_DATE,uchr.FULL_NAME key_sort
+                         from (select o.id,d.id vedom_id,d.id_complex,o.FULL_NAME,o.SHORT_NAME,o.INN,o.KPP, o.open_date_d,o.IS_SMP,o.SPZ_CODE,o.ID_DATA_SOURCE,o.VERSION_DATE from (select * from sp_department where id!=id_organization) d
                          join sp_organization o on d.id_organization=o.id and d.version_date=V_VERSION_DATE and O.VERSION_DATE=V_VERSION_DATE and D.ID_DATA_SOURCE=V_ID_DATA_SOURCE and o.ID_DATA_SOURCE=V_ID_DATA_SOURCE) uchr
                 ) cust
                 connect by prior cust.id=cust.id_parent
@@ -2261,174 +2262,153 @@ END;#';
                                     last_change_publish_date,
                                     first_approve_date,
                                     last_change_approve_date)
-            SELECT lv.ID,
-                   lv.REASON_CONCLUSION_CONTRACT,
-                   lv.CONTRACT_NMC AS COST,
-                   NULL AS DESCRIPTION,
-                   le.REGISTRY_NUMBER,
-                   pe.REG_NUMBER,
-                   pl.LOT_NUM,
-                   li.NMC AS MAXIMUM_CONTRACT_COST,
-                   lv.LOT_NAME,
-                   lv.METHOD_OF_SUPPLIER_ID,
-                   nvl(pl.PROCEDURE_ID,ple1.PROCEDURE_ID) AS TENDER_ID,
-                   lv.bidding_on_unit_production AS IS_UNIT,
-                   CASE
-                      WHEN lv.SMP_TYPE = 'none' THEN 0
-                      WHEN lv.SMP_TYPE = 'entirely' THEN 1
-                      WHEN lv.SMP_TYPE = 'partly' THEN 2
-                      ELSE NULL
-                   END
-                      IS_SMALL,
-                   lv.CAN_MULTIPLE AS IS_MULTI_WINNER,
-                   PSLE.PLAN_SCHEDULE_ID,
-                   LE.CUSTOMER_ID,
-                   le.id AS liid,
-                   le.WAS_PUBLISHED,
-                   lv.STATUS_ID,
-                   LV.START_DATE,--это дата плановой публикации процедуры закупки, в которую войдет данный лот
-                   CASE WHEN lv.STATUS_ID IN (11, 6) THEN 0 ELSE 1 END
-                      is_active,
-                   dates.last_approve_date,--lsh.status_date, 
-                   V_ID_DATA_SOURCE,
-                   V_VERSION_DATE,
-                   CASE
-                    WHEN (lv.METHOD_OF_SUPPLIER_ID=4) AND (lv.CONTRACT_NMC=0) THEN 1
-                    else 0
-                   END IS_AUCTION_TO_INCREASE,
-                   lv.joint_auction,
-                   dates.first_pub_date,
-                   dates.last_pub_date,
-                   dates.approve_before_pub_date,
-                   dates.created_date,
-                   lv.ORDER_PERCENT_AMOUNT,
-                   lv.GUARANTEE_PERCENT_AMOUNT,
-                   dates.last_change_pub_date,
-                   dates.first_approve_date,
-                   dates.last_change_approve_date
-              FROM D_LOT_ENTITY@EAIST_MOS_SHARD le
-                   JOIN (select 
-                          nvl(lv.ID, maxlv.ID) ID,
-                          nvl(lv.ENTITY_ID, maxlv.ENTITY_ID) ENTITY_ID,
-                          nvl(lv.REASON_CONCLUSION_CONTRACT, maxlv.REASON_CONCLUSION_CONTRACT) REASON_CONCLUSION_CONTRACT,
-                          nvl(lv.CONTRACT_NMC, maxlv.CONTRACT_NMC) CONTRACT_NMC,
-                          nvl(lv.LOT_NAME, maxlv.LOT_NAME) LOT_NAME,
-                          nvl(lv.METHOD_OF_SUPPLIER_ID, maxlv.METHOD_OF_SUPPLIER_ID) METHOD_OF_SUPPLIER_ID,
-                          nvl(lv.SMP_TYPE, maxlv.SMP_TYPE) SMP_TYPE,
-                          nvl(lv.CAN_MULTIPLE, maxlv.CAN_MULTIPLE) CAN_MULTIPLE,
-                          nvl(lv.STATUS_ID, maxlv.STATUS_ID) STATUS_ID,
-                          nvl(lv.START_DATE, maxlv.START_DATE) START_DATE,
-                          nvl(lv.bidding_on_unit_production, maxlv.bidding_on_unit_production) bidding_on_unit_production,
-                          nvl(lv.joint_auction, maxlv.joint_auction) joint_auction,
-                          nvl(lv.ORDER_PERCENT_AMOUNT, maxlv.ORDER_PERCENT_AMOUNT) ORDER_PERCENT_AMOUNT,
-                          nvl(lv.GUARANTEE_PERCENT_AMOUNT, maxlv.GUARANTEE_PERCENT_AMOUNT) GUARANTEE_PERCENT_AMOUNT
-                          from 
-                          (SELECT l.ID,
-                                                          l.ENTITY_ID,
-                                                          l.REASON_CONCLUSION_CONTRACT,
-                                                          l.CONTRACT_NMC,
-                                                          l.LOT_NAME,
-                                                          l.METHOD_OF_SUPPLIER_ID,
-                                                          l.SMP_TYPE,
-                                                          l.CAN_MULTIPLE,
-                                                          l.STATUS_ID,
-                                                          L.START_DATE,
-                                                          l.bidding_on_unit_production,
-                                                          l.joint_auction,
-                                                          l.ORDER_PERCENT_AMOUNT,
-                                                          l.GUARANTEE_PERCENT_AMOUNT
-                                                     FROM D_LOT_VERSION@EAIST_MOS_SHARD l
-                                                    WHERE deleted_date IS NULL) lv 
-                          FULL JOIN                                                   
-                          (SELECT l.ID,
-                                  l.ENTITY_ID,
-                                  l.REASON_CONCLUSION_CONTRACT,
-                                  l.CONTRACT_NMC,
-                                  l.LOT_NAME,
-                                  l.METHOD_OF_SUPPLIER_ID,
-                                  l.SMP_TYPE,
-                                  l.CAN_MULTIPLE,
-                                  l.STATUS_ID,
-                                  L.START_DATE,
-                                  l.bidding_on_unit_production,
-                                  l.joint_auction,
-                                  l.ORDER_PERCENT_AMOUNT,
-                                  l.GUARANTEE_PERCENT_AMOUNT
-                             FROM D_LOT_VERSION@EAIST_MOS_SHARD l
-                             join
-                              (select distinct max(id)  over (partition by entity_id) maxid, entity_id from D_LOT_VERSION@EAIST_MOS_SHARD) maxl
-                              on l.entity_id=maxl.entity_id and l.id=maxl.maxid) maxlv
-                           ON lv.entity_id=maxlv.entity_id) lv                 
-                      ON lv.ENTITY_ID = le.ID
-                   /*LEFT JOIN (select distinct
-                              entity_id,
-                              max(approved_date) over (partition by entity_id) approved_date,
-                              first_pub_date,
-                              last_pub_date,
-                              max(case when (approved_date<first_pub_date) or first_pub_date is null then approved_date else null end) over (partition by entity_id) approve_before_pub_date,
-                              created_date
-                              from (
-                              select entity_id,
-                              case when status_id=2 then created_date else null end approved_date,
-                              min(case when status_id=5 then created_date else null end) over (partition by entity_id) first_pub_date,
-                              max(case when status_id=5 then created_date else null end) over (partition by entity_id) last_pub_date,
-                              min(created_date) over (partition by entity_id) created_date
-                              FROM d_lot_version@eaist_mos_shard) where coalesce(first_pub_date, approved_date,created_date) is not null) dates
-                      ON dates.entity_id=le.id */     
-                    LEFT JOIN (select distinct 
-                              entity_id,
-                              first_pub_date,
-                              last_change_pub_date,
-                              first_approve_date,
-                              last_change_approve_date,
-                              last_pub_date,
-                              last_approve_date,
-                              created_date,
-                              max(case when (approved_date<first_pub_date) or first_pub_date is null then approved_date else null end) over (partition by entity_id) approve_before_pub_date
-                              from (                
-                              select distinct ver.entity_id,
-                                              ver.created_date,
-                                                      min(case when stat.status_id=5 then status_date else null end) over (partition by ver.entity_id) first_pub_date,
-                                                      max(case when stat.status_id=5 and ver.id=ver.max_id then status_date else null end) over (partition by ver.entity_id) last_change_pub_date,
-                                                      max(case when stat.status_id=5 then status_date else null end) over (partition by ver.entity_id) last_pub_date,
-                                                      min(case when stat.status_id=2 then status_date else null end) over (partition by ver.entity_id) first_approve_date,
-                                                      max(case when stat.status_id=2 and ver.id=ver.max_id then status_date else null end) over (partition by ver.entity_id) last_change_approve_date,
-                                                      max(case when stat.status_id=2 then status_date else null end) over (partition by ver.entity_id) last_approve_date,
-                                                      case when stat.status_id=2 then status_date else null end approved_date
-                                                      FROM (select v.id, v.entity_id, max(id) over (partition by entity_id) max_id, min(created_date) over (partition by entity_id) created_date  from D_LOT_VERSION@EAIST_MOS_SHARD v) ver
-                                                      JOIN D_LOT_STATUS_HISTORY@EAIST_MOS_SHARD stat
-                                                      ON ver.id=stat.version_id
-                                                      )) dates ON dates.entity_id=le.id
-                   left join 
-                      (select lle.lot_id, procedure_id from (select id, lot_id, root_lot_id, max(id) over (partition by lot_id) max_id from d_lot_lot_entry@eaist_mos_shard  where is_actual = 1) lle --ищем связь совместных лотов с главными совместными лотами
-                      left join d_procedure_lot_entry@eaist_mos_shard ple1 on lle.id=lle.max_id and ple1.lot_id = lle.root_lot_id and ple1.is_actual = 1 --ищем связь главных совместных лотов с процедурами
-                      where PROCEDURE_ID IN (SELECT ID FROM D_PROCEDURE_VERSION@EAIST_MOS_SHARD WHERE deleted_date IS NULL))ple1  on lv.id = ple1.lot_id
-                   LEFT JOIN D_LOT_INDEX@EAIST_MOS_SHARD li
-                      ON le.ID = li.ID
-                   /*LEFT JOIN D_PROCEDURE_LOT_ENTRY@EAIST_MOS_SHARD pl
-                      ON     lv.ID = pl.LOT_ID
-                         AND pl.IS_ACTUAL = 1
-                         AND pl.PROCEDURE_ID IN (SELECT ID
-                                                   FROM D_PROCEDURE_VERSION@EAIST_MOS_SHARD
-                                                  WHERE deleted_date IS NULL)*/ 
-                  LEFT JOIN (select apl.* from (select * from D_PROCEDURE_LOT_ENTRY@EAIST_MOS_SHARD where IS_ACTUAL = 1
-                              and PROCEDURE_ID IN (SELECT ID
-                                                 FROM D_PROCEDURE_VERSION@EAIST_MOS_SHARD
-                                                WHERE deleted_date IS NULL) ) apl
-                            JOIN --Исключаем лоты соединенные с несколькими процедурами
-                            (select lot_id from D_PROCEDURE_LOT_ENTRY@EAIST_MOS_SHARD where IS_ACTUAL = 1
-                              and PROCEDURE_ID IN (SELECT ID
-                                                   FROM D_PROCEDURE_VERSION@EAIST_MOS_SHARD
-                                                  WHERE deleted_date IS NULL) 
-                              group by lot_id having count(lot_id)=1 order by lot_id) spl
-                            on apl.lot_id=spl.lot_id)  pl ON  lv.ID = pl.LOT_ID
-                  LEFT JOIN (  SELECT MAX (PLAN_SCHEDULE_ID) PLAN_SCHEDULE_ID,
-                                       LOT_ID
-                                  FROM D_PLAN_SCHEDULE_LOT_ENTRY@EAIST_MOS_SHARD
-                                 WHERE is_actual = 1 and plan_schedule_id in (select id from d_plan_schedule_version@eaist_mos_shard where deleted_date is null)
-                              GROUP BY LOT_ID) psle
-                      ON lv.id = psle.LOT_ID
-                  LEFT JOIN D_PROCEDURE_ENTITY@EAIST_MOS_SHARD pe ON pl.PROCEDURE_ENTITY_ID=pe.ID;
+			SELECT lv.ID,
+							   lv.REASON_CONCLUSION_CONTRACT,
+							   lv.CONTRACT_NMC AS COST,
+							   NULL AS DESCRIPTION,
+							   le.REGISTRY_NUMBER,
+							   p.REGISTRY_NUMBER TENDER_REG_NUMBER,
+							   lv.LOT_NUM,
+							   li.NMC AS MAXIMUM_CONTRACT_COST,
+							   lv.LOT_NAME,
+							   lv.METHOD_OF_SUPPLIER_ID,
+							   lv.TENDER_ID,
+							   lv.bidding_on_unit_production AS IS_UNIT,
+							   CASE
+								  WHEN lv.SMP_TYPE = 'none' THEN 0
+								  WHEN lv.SMP_TYPE = 'entirely' THEN 1
+								  WHEN lv.SMP_TYPE = 'partly' THEN 2
+								  ELSE NULL
+							   END
+								  IS_SMALL,
+							   lv.CAN_MULTIPLE AS IS_MULTI_WINNER,
+							   PSLE.PLAN_SCHEDULE_ID,
+							   LE.CUSTOMER_ID,
+							   le.id AS liid,
+							   le.WAS_PUBLISHED,
+							   lv.STATUS_ID,
+							   LV.START_DATE,--это дата плановой публикации процедуры закупки, в которую войдет данный лот
+							   CASE WHEN lv.STATUS_ID IN (11, 6) THEN 0 ELSE 1 END
+								  is_active,
+							   dates.last_approve_date,--lsh.status_date, 
+							   V_ID_DATA_SOURCE,
+							   V_VERSION_DATE,
+							   CASE
+								WHEN (lv.METHOD_OF_SUPPLIER_ID=4) AND (lv.CONTRACT_NMC=0) THEN 1
+								else 0
+							   END IS_AUCTION_TO_INCREASE,
+							   lv.joint_auction,
+							   dates.first_pub_date,
+							   dates.last_pub_date,
+							   dates.approve_before_pub_date,
+							   dates.created_date,
+							   lv.ORDER_PERCENT_AMOUNT,
+							   lv.GUARANTEE_PERCENT_AMOUNT,
+							   dates.last_change_pub_date,
+							   dates.first_approve_date,
+							   dates.last_change_approve_date
+			FROM (select  lv.*,  nvl(pl.PROCEDURE_ID,ple1.PROCEDURE_ID) AS TENDER_ID, nvl(pl.LOT_NUM,ple1.LOT_NUM) AS LOT_NUM
+				  FROM (select 
+											nvl(lv.ID, maxlv.ID) ID,
+											nvl(lv.ENTITY_ID, maxlv.ENTITY_ID) ENTITY_ID,
+											nvl(lv.REASON_CONCLUSION_CONTRACT, maxlv.REASON_CONCLUSION_CONTRACT) REASON_CONCLUSION_CONTRACT,
+											nvl(lv.CONTRACT_NMC, maxlv.CONTRACT_NMC) CONTRACT_NMC,
+											nvl(lv.LOT_NAME, maxlv.LOT_NAME) LOT_NAME,
+											nvl(lv.METHOD_OF_SUPPLIER_ID, maxlv.METHOD_OF_SUPPLIER_ID) METHOD_OF_SUPPLIER_ID,
+											nvl(lv.SMP_TYPE, maxlv.SMP_TYPE) SMP_TYPE,
+											nvl(lv.CAN_MULTIPLE, maxlv.CAN_MULTIPLE) CAN_MULTIPLE,
+											nvl(lv.STATUS_ID, maxlv.STATUS_ID) STATUS_ID,
+											nvl(lv.START_DATE, maxlv.START_DATE) START_DATE,
+											nvl(lv.bidding_on_unit_production, maxlv.bidding_on_unit_production) bidding_on_unit_production,
+											nvl(lv.joint_auction, maxlv.joint_auction) joint_auction,
+											nvl(lv.ORDER_PERCENT_AMOUNT, maxlv.ORDER_PERCENT_AMOUNT) ORDER_PERCENT_AMOUNT,
+											nvl(lv.GUARANTEE_PERCENT_AMOUNT, maxlv.GUARANTEE_PERCENT_AMOUNT) GUARANTEE_PERCENT_AMOUNT
+											from 
+											(SELECT l.ID,
+																			l.ENTITY_ID,
+																			l.REASON_CONCLUSION_CONTRACT,
+																			l.CONTRACT_NMC,
+																			l.LOT_NAME,
+																			l.METHOD_OF_SUPPLIER_ID,
+																			l.SMP_TYPE,
+																			l.CAN_MULTIPLE,
+																			l.STATUS_ID,
+																			L.START_DATE,
+																			l.bidding_on_unit_production,
+																			l.joint_auction,
+																			l.ORDER_PERCENT_AMOUNT,
+																			l.GUARANTEE_PERCENT_AMOUNT
+																	   FROM D_LOT_VERSION@EAIST_MOS_SHARD l
+																	  WHERE deleted_date IS NULL) lv 
+											FULL JOIN                                                   
+											(SELECT l.ID,
+													l.ENTITY_ID,
+													l.REASON_CONCLUSION_CONTRACT,
+													l.CONTRACT_NMC,
+													l.LOT_NAME,
+													l.METHOD_OF_SUPPLIER_ID,
+													l.SMP_TYPE,
+													l.CAN_MULTIPLE,
+													l.STATUS_ID,
+													L.START_DATE,
+													l.bidding_on_unit_production,
+													l.joint_auction,
+													l.ORDER_PERCENT_AMOUNT,
+													l.GUARANTEE_PERCENT_AMOUNT
+											   FROM D_LOT_VERSION@EAIST_MOS_SHARD l
+											   join
+												(select distinct max(id)  over (partition by entity_id) maxid, entity_id from D_LOT_VERSION@EAIST_MOS_SHARD) maxl
+												on l.entity_id=maxl.entity_id and l.id=maxl.maxid) maxlv
+											 ON lv.entity_id=maxlv.entity_id) lv 
+				  left join 
+										(select lle.lot_id, procedure_id, lot_num from (select id, lot_id, root_lot_id, max(id) over (partition by lot_id) max_id from d_lot_lot_entry@eaist_mos_shard  where is_actual = 1) lle --ищем связь совместных лотов с главными совместными лотами
+										left join d_procedure_lot_entry@eaist_mos_shard ple1 on lle.id=lle.max_id and ple1.lot_id = lle.root_lot_id and ple1.is_actual = 1 --ищем связь главных совместных лотов с процедурами
+										where PROCEDURE_ID IN (SELECT ID FROM D_PROCEDURE_VERSION@EAIST_MOS_SHARD WHERE deleted_date IS NULL))ple1  on lv.id = ple1.lot_id                           
+				  LEFT JOIN (select apl.* from (select * from D_PROCEDURE_LOT_ENTRY@EAIST_MOS_SHARD where IS_ACTUAL = 1
+												and PROCEDURE_ID IN (SELECT ID
+																   FROM D_PROCEDURE_VERSION@EAIST_MOS_SHARD
+																  WHERE deleted_date IS NULL) ) apl
+											  JOIN --Исключаем лоты соединенные с несколькими процедурами
+											  (select lot_id from D_PROCEDURE_LOT_ENTRY@EAIST_MOS_SHARD where IS_ACTUAL = 1
+												and PROCEDURE_ID IN (SELECT ID
+																	 FROM D_PROCEDURE_VERSION@EAIST_MOS_SHARD
+																	WHERE deleted_date IS NULL) 
+												group by lot_id having count(lot_id)=1 order by lot_id) spl
+											  on apl.lot_id=spl.lot_id)  pl ON  lv.ID = pl.LOT_ID) lv
+			JOIN D_LOT_ENTITY@EAIST_MOS_SHARD le ON lv.ENTITY_ID=le.ID
+			LEFT JOIN (select * from T_TENDER WHERE ID_DATA_SOURCE=2 and VERSION_DATE=TRUNC(SYSDATE)) p on p.ID=lv.TENDER_ID
+			LEFT JOIN (select distinct 
+										  entity_id,
+										  first_pub_date,
+										  last_change_pub_date,
+										  first_approve_date,
+										  last_change_approve_date,
+										  last_pub_date,
+										  last_approve_date,
+										  created_date,
+										  max(case when (approved_date<first_pub_date) or first_pub_date is null then approved_date else null end) over (partition by entity_id) approve_before_pub_date
+										  from (                
+										  select distinct ver.entity_id,
+														  ver.created_date,
+																  min(case when stat.status_id=5 then status_date else null end) over (partition by ver.entity_id) first_pub_date,
+																  max(case when stat.status_id=5 and ver.id=ver.max_id then status_date else null end) over (partition by ver.entity_id) last_change_pub_date,
+																  max(case when stat.status_id=5 then status_date else null end) over (partition by ver.entity_id) last_pub_date,
+																  min(case when stat.status_id=2 then status_date else null end) over (partition by ver.entity_id) first_approve_date,
+																  max(case when stat.status_id=2 and ver.id=ver.max_id then status_date else null end) over (partition by ver.entity_id) last_change_approve_date,
+																  max(case when stat.status_id=2 then status_date else null end) over (partition by ver.entity_id) last_approve_date,
+																  case when stat.status_id=2 then status_date else null end approved_date
+																  FROM (select v.id, v.entity_id, max(id) over (partition by entity_id) max_id, min(created_date) over (partition by entity_id) created_date  from D_LOT_VERSION@EAIST_MOS_SHARD v) ver
+																  JOIN D_LOT_STATUS_HISTORY@EAIST_MOS_SHARD stat
+																  ON ver.id=stat.version_id
+																  )) dates ON dates.entity_id=le.id
+			LEFT JOIN D_LOT_INDEX@EAIST_MOS_SHARD li ON le.ID = li.ID
+			LEFT JOIN (  SELECT MAX (PLAN_SCHEDULE_ID) PLAN_SCHEDULE_ID,
+												   LOT_ID
+											  FROM D_PLAN_SCHEDULE_LOT_ENTRY@EAIST_MOS_SHARD
+											 WHERE is_actual = 1 and plan_schedule_id in (select id from d_plan_schedule_version@eaist_mos_shard where deleted_date is null)
+										  GROUP BY LOT_ID) psle
+								  ON lv.id = psle.LOT_ID                      
+			where (le.published_id is null or p.id_status in (7,18) or p.id_status is null);
 
 
     -- Привязка кол-ва обработанных строк
