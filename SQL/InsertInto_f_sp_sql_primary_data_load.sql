@@ -214,6 +214,7 @@ END;#';
                                               VERSION_DATE,
                                               ENTITY_ID,
                                               KPP,
+                                              WEBSITE,
                                               ORGANIZATION_TYPE,
                                               CONNECT_LEVEL,
                                               OPEN_DATE,
@@ -235,6 +236,7 @@ END;#';
                        V_VERSION_DATE,
                        ENTITY_ID,
                        KPP,
+                       WEB,
                        CASE
                           WHEN UNK IS NOT NULL THEN 2
                           WHEN UNK IS NULL AND IS_FL = 0 THEN 2
