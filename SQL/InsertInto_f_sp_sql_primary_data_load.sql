@@ -4221,21 +4221,28 @@ END;#';
                                                DESCRIPTION,
                                                NAME,
                                                ID_DATA_SOURCE,
-                                               VERSION_DATE)
-            SELECT ID,
-                   ACTUAL_DATE,
-                   STAGE_NUMBER,
-                   CONTRACT_ID,
-                   COST_IN_RUBLE,
-                   IS_ACTUAL,
-                   PLAN_DATE,
-                   STATE_ID,
-                   DESCRIPTION,
-                   NAME,
+                                               VERSION_DATE,
+                                               FACT_END_DATE)
+            SELECT cs.ID,
+                   cs.ACTUAL_DATE,
+                   cs.STAGE_NUMBER,
+                   cs.CONTRACT_ID,
+                   cs.COST_IN_RUBLE,
+                   cs.IS_ACTUAL,
+                   cs.PLAN_DATE,
+                   cs.STATE_ID,
+                   cs.DESCRIPTION,
+                   cs.NAME,
                    V_ID_DATA_SOURCE,
                    V_VERSION_DATE
-              FROM CONTRACT_STAGE@EAIST_MOS_RC
-             WHERE DELETED_DATE IS NULL;
+                   document_date
+              FROM CONTRACT_STAGE@EAIST_MOS_RC cs
+              join (select distinct
+                      stage_id,
+                      document_date,
+                      max(document_date) over (partition by stage_id) max_document_date
+                      from CONTRACT_STAGE_EXAMINATION@eaist_mos_rc where is_actual = 1 and is_violation_acceptance = 0) cse on cse.stage_id=cs.id and max_document_date=document_date
+             WHERE DELETED_DATE IS NULL; 
 
     -- Привязка кол-ва обработанных строк
     :V_ROWCOUNT := SQL%ROWCOUNT;
