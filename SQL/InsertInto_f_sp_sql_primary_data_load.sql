@@ -4234,7 +4234,7 @@ END;#';
                    cs.DESCRIPTION,
                    cs.NAME,
                    V_ID_DATA_SOURCE,
-                   V_VERSION_DATE
+                   V_VERSION_DATE,
                    document_date
               FROM CONTRACT_STAGE@EAIST_MOS_RC cs
               join (select distinct
