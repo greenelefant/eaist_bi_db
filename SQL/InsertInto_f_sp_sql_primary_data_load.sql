@@ -2064,7 +2064,7 @@ END;#';
                    V_ID_DATA_SOURCE,
                    V_VERSION_DATE
               FROM N_FINANCIAL_LIMIT@EAIST_MOS_NSI
-             WHERE deleted_date IS NULL;
+             WHERE deleted_date IS NULL and not (FINANCIAL_SOURCE_TYPE='PFHD' and substr(code,1,1)='0');
 
     -- Привязка кол-ва обработанных строк
     :V_ROWCOUNT := SQL%ROWCOUNT;
