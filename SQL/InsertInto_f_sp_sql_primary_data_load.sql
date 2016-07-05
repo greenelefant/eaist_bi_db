@@ -2121,13 +2121,36 @@ SELECT pv.ID as Id1,
                            END
                               TENDER_LEVEL,
                            PL.JOINT_AUCTION AS IS_UNION_TRADE,
-                           nvl(oos.PROTOCOL_DATE, not_ea_oos.protocol_created_date) AS CREATE_PROTOCOL_DATE,                          
+                           CASE 
+                            WHEN pe.METHOD_OF_SUPPLIER_ID=4 THEN
+                              CASE WHEN PV.STATUS_ID=18 or have_win.procedure_entity_id is not null THEN oos.protocol_date ELSE oos.lim_protocol_date END
+                            ELSE
+                              CASE 
+                                WHEN (pe.METHOD_OF_SUPPLIER_ID=1 and not_ea_oos.session_type in (2,3)) or
+                                      (pe.METHOD_OF_SUPPLIER_ID=2 and not_ea_oos.session_type in (5)) or
+                                      (pe.METHOD_OF_SUPPLIER_ID=5 and not_ea_oos.session_type in (12)) or
+                                      (pe.METHOD_OF_SUPPLIER_ID=6 and not_ea_oos.session_type in (15)) or
+                                      have_win.procedure_entity_id is not null
+                                      THEN not_ea_oos.protocol_created_date
+                                else null
+                              END
+                           END AS CREATE_PROTOCOL_DATE,--nvl(oos.PROTOCOL_DATE, not_ea_oos.protocol_created_date) AS CREATE_PROTOCOL_DATE,                          
                            pe.REG_NUMBER,
                            --pv.TRADE_OBJECT_TYPE -- string value as ID_TORG_TYPE,                   
                            0 AS IS_44FZ,
                            pv.ORGANIZER_ID AS ID_ENTERPRISE_ENTITY,
-                           oos.PUBLISH_DATE AS PUBLISH_OOS_DATE,
-                           oos.PROTOCOL_DATE AS LAST_PROTOCOL_DATE_FROM_OOS,
+                           CASE 
+                            WHEN pe.METHOD_OF_SUPPLIER_ID=4 THEN
+                              CASE WHEN PV.STATUS_ID=18 THEN oos.publish_date ELSE oos.lim_publish_date END
+                            ELSE
+                              null
+                           END AS PUBLISH_OOS_DATE,
+                           CASE 
+                            WHEN pe.METHOD_OF_SUPPLIER_ID=4 THEN
+                              CASE WHEN PV.STATUS_ID=18 THEN oos.protocol_date ELSE oos.lim_protocol_date END
+                            ELSE
+                              not_ea_oos.protocol_created_date
+                           END AS LAST_PROTOCOL_DATE_FROM_OOS,
                            pe.CUSTOMER_ID,
                            pv.UNSUCCESSFUL_PURCHASE,
                            pv.status_id,
@@ -2183,10 +2206,25 @@ SELECT pv.ID as Id1,
                           
                     LEFT JOIN D_PROCEDURE_DATE@EAIST_MOS_SHARD pd ON pd.PROCEDURE_ID = pv.ID AND pd.DATE_TYPE = 'publicationDate' AND pd.deleted_date IS NULL
                     LEFT JOIN D_PROCEDURE_DATE@EAIST_MOS_SHARD pre ON pre.PROCEDURE_ID = pv.ID AND pre.DATE_TYPE = 'receivingEndDateTime' AND pre.deleted_date IS NULL
-                    LEFT JOIN (SELECT PUBLISH_DATE,PROTOCOL_DATE,PROCEDURE_ENTITY_ID,ROW_NUMBER () OVER (PARTITION BY PROCEDURE_ENTITY_ID ORDER BY PROTOCOL_DATE DESC) rn
-                                         FROM D_OOS_FTP_PROTOCOL@EAIST_MOS_SHARD where PROTOCOL_TYPE='PPI') oos
-                    ON oos.PROCEDURE_ENTITY_ID = pe.ID AND oos.rn = 1
-                    LEFT JOIN (select distinct protocol_created_date, procedure_id from (
+                    LEFT JOIN (select oos_nolim.PROCEDURE_ENTITY_ID, oos_nolim.PUBLISH_DATE, oos_nolim.PROTOCOL_DATE, oos_lim.PUBLISH_DATE LIM_PUBLISH_DATE, oos_lim.PROTOCOL_DATE LIM_PROTOCOL_DATE from 
+                              (SELECT DISTINCT PUBLISH_DATE, PROTOCOL_DATE, PROCEDURE_ENTITY_ID FROM
+                              (SELECT  PUBLISH_DATE,
+                                        PROTOCOL_DATE,
+                                        PROCEDURE_ENTITY_ID,
+                                        max(PROTOCOL_DATE)  OVER (PARTITION BY PROCEDURE_ENTITY_ID) MAX_PROTOCOL_DATE,
+                                        max(PUBLISH_DATE)  OVER (PARTITION BY PROCEDURE_ENTITY_ID) MAX_PUBLISH_DATE
+                                       FROM D_OOS_FTP_PROTOCOL@EAIST_MOS_SHARD) where PROTOCOL_DATE=MAX_PROTOCOL_DATE and PUBLISH_DATE=MAX_PUBLISH_DATE) oos_nolim
+                              left join
+                              (SELECT DISTINCT PUBLISH_DATE, PROTOCOL_DATE, PROCEDURE_ENTITY_ID FROM
+                              (SELECT  PUBLISH_DATE,
+                                        PROTOCOL_DATE,
+                                        PROCEDURE_ENTITY_ID,
+                                        max(CASE WHEN PROTOCOL_TYPE in ('PPI', 'PPN') THEN PROTOCOL_DATE ELSE NULL END)  OVER (PARTITION BY PROCEDURE_ENTITY_ID) MAX_LIM_PROTOCOL_DATE,
+                                        max(CASE WHEN PROTOCOL_TYPE in ('PPI', 'PPN') THEN PUBLISH_DATE ELSE NULL END)  OVER (PARTITION BY PROCEDURE_ENTITY_ID) MAX_LIM_PUBLISH_DATE
+                                       FROM D_OOS_FTP_PROTOCOL@EAIST_MOS_SHARD) where PROTOCOL_DATE=MAX_LIM_PROTOCOL_DATE and PUBLISH_DATE=MAX_LIM_PUBLISH_DATE) oos_lim
+                              on oos_nolim.PROCEDURE_ENTITY_ID=oos_lim.PROCEDURE_ENTITY_ID) oos
+                    ON oos.PROCEDURE_ENTITY_ID = pe.ID
+                    LEFT JOIN (select distinct protocol_created_date, procedure_id, session_type from (
                         select com.*, 
                                 max(protocol_number) over (partition by procedure_Id) max_protocol,
                                 max(version) over (partition by procedure_Id, protocol_number) max_version,
@@ -2202,6 +2240,30 @@ SELECT pv.ID as Id1,
                                 min(case when status_id=7 then created_date else null end) over (partition by entity_id) first_pub_date,
                                 max(case when status_id=7 then created_date else null end) over (partition by entity_id) last_pub_date
                                 FROM D_PROCEDURE_VERSION@EAIST_MOS_SHARD) dates on dates.entity_id=pe.id
+                    LEFT JOIN (select distinct procedure_entity_id from (
+                              select procedure_Id procedure_entity_id, place from d_ea_winner@eaist_mos_shard
+                              union
+                              SELECT                           
+                                procedure_entity_id,                          
+                                row_number() over (partition by LOT_ID order by rank desc) PLACE                          
+                                FROM
+                                (
+                                SELECT DISTINCT 
+                                        b.lot_id,
+                                       nvl(ple.procedure_entity_id, ple1.procedure_entity_id) procedure_entity_id,
+                                       b.FINAL_RATING AS RANK
+                        
+                                  FROM D_BID@EAIST_MOS_SHARD b
+                                  JOIN D_LOT_VERSION@EAIST_MOS_SHARD LV on  LV.ENTITY_ID=B.LOT_ID
+                                  left JOIN D_PROCEDURE_LOT_ENTRY@EAIST_MOS_SHARD ple ON lv.ID = ple.LOT_ID AND is_actual = 1
+                                  left join 
+                                  (select lle.lot_id, procedure_entity_id, lot_num 
+                                      from (select id, lot_id, root_lot_id, max(id) over (partition by lot_id) max_id from d_lot_lot_entry@eaist_mos_shard  where is_actual = 1) lle --ищем связь совместных лотов с главными совместными лотами
+                                      left join d_procedure_lot_entry@eaist_mos_shard ple1 on lle.id=lle.max_id and ple1.lot_id = lle.root_lot_id and ple1.is_actual = 1 --ищем связь главных совместных лотов с процедурами
+                                    where PROCEDURE_ID IN (SELECT ID FROM D_PROCEDURE_VERSION@EAIST_MOS_SHARD WHERE deleted_date IS NULL)) ple1  
+                                  on lv.id = ple1.lot_id )
+                                  ) where place=1) have_win on have_win.procedure_entity_id=pe.id        
+                                
                     WHERE EXISTS (SELECT * FROM D_PROCEDURE_LOT_ENTRY@EAIST_MOS_SHARD pl
                       JOIN (SELECT l.ID, l.entity_id FROM D_LOT_VERSION@EAIST_MOS_SHARD l WHERE deleted_date IS NULL
                               union all
