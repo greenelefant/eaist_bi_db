@@ -3950,7 +3950,8 @@ END;#';
                                          PAYMENT_SUM,
                                          FACT_START_DATE,
                                          FACT_END_DATE)
-                                                   
+             
+                                                
             SELECT distinct con.ID,
                    con.Name,
                    con.CUSTOMER_ID AS ID_CUSTOMER,
@@ -3977,7 +3978,7 @@ END;#';
                    con.NEED_CONCLUSION_APPROVE,
                    con.EDITION_NUMBER,
                    con.CONTRACTIMPORT_ID,
-                   con.TENDER_ID,
+                   l.TENDER_ID,--con.TENDER_ID,
                    con.NEWSTATE_ID,
                    con.CONTRACT_DRAFT_DATE,
                    con.EVASIONSUPPLIER_ID,
@@ -3999,6 +4000,9 @@ END;#';
                    case when con.state_id=9 then exec_date.document_date else null end exec_end_Date--cd.end_exec_date
               FROM CONTRACT@EAIST_MOS_RC con             
               join contract_lot@eaist_mos_rc cl on con.lot_id = cl.id
+              
+              left join (select * from t_lot where version_date=trunc(sysdate) and id_data_source=2) l on l.id_entity=cl.ext_id
+
               LEFT JOIN (select lpe.lot_id, sum(pdc.purchase_sum) lot_sum, sum(pdc.purchase_sum*nvl(lpe.smp_quota,0)/100) smp_sum from d_lot_dpurchase_entry@eaist_mos_shard lpe
               join D_DETAILED_PURCHASE_SPEC@EAIST_MOS_SHARD pdc on lpe.detailed_purchase_id=pdc.dPurchase_id 
               group by lpe.lot_id) pdc on pdc.lot_id=cl.ext_id
