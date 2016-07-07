@@ -3656,8 +3656,12 @@ END;#';
                    pdl.te_code EXPENSE_CODE,
                    pdl.kos_code ECONOMIC_CODE
               FROM (select pdl.*,
-                            SUBSTR(pdl.LIMIT_CODE, 1, 3) sg_code,
-                            SUBSTR(pdl.LIMIT_CODE, 4, 4) sb_code,
+                            case 
+                              when LENGTH(pdl.LIMIT_CODE)>=20 then SUBSTR(pdl.LIMIT_CODE, 1, 3)
+                            end sg_code,
+                            case
+                              when LENGTH(pdl.LIMIT_CODE)>=20 then SUBSTR(pdl.LIMIT_CODE, 4, 4) 
+                            end sb_code,
                             case
                               when  LENGTH(pdl.LIMIT_CODE)=20 then SUBSTR(pdl.LIMIT_CODE, 8, 7)
                               when  LENGTH(pdl.LIMIT_CODE)=23 then SUBSTR(pdl.LIMIT_CODE, 8, 10)
@@ -3667,6 +3671,7 @@ END;#';
                               when  LENGTH(pdl.LIMIT_CODE)=23 then SUBSTR(pdl.LIMIT_CODE, 18, 3)
                             end te_code,
                             case
+                              when  LENGTH(pdl.LIMIT_CODE)<20 then pdl.LIMIT_CODE
                               when  LENGTH(pdl.LIMIT_CODE)=20 then SUBSTR(pdl.LIMIT_CODE, 18, 3)
                               when  LENGTH(pdl.LIMIT_CODE)=23 then SUBSTR(pdl.LIMIT_CODE, 21, 3)
                             end kos_code
@@ -4534,7 +4539,7 @@ END;#';
                                END
                                   PURPOSE_CODE,
                                CASE
-                                  WHEN KBK_CODE LIKE '%-%' THEN SUBSTR (KBK_CODE, 5, 4)
+                                  WHEN (KBK_CODE LIKE '%-%') and (LENGTH(KBK_CODE)>=20) THEN SUBSTR (KBK_CODE, 5, 4)
                                   ELSE NULL
                                END
                                   EXPENSE_CODE,
@@ -4543,11 +4548,12 @@ END;#';
                                LIABILITY_DATE,
                                LIABILITY_NUMBER,
                                CASE
-                                  WHEN KBK_CODE LIKE '%-%' THEN SUBSTR (KBK_CODE, 1, 3)
+                                  WHEN (KBK_CODE LIKE '%-%') and (LENGTH(KBK_CODE)>=20) THEN SUBSTR (KBK_CODE, 1, 3)
                                   ELSE NULL
                                END
                                   GRBS_CODE,
                                CASE
+                                  WHEN (LENGTH(KBK_CODE)<20) THEN KBK_CODE
                                   WHEN (KBK_CODE LIKE '%-%') and (LENGTH(KBK_CODE)=24) THEN SUBSTR (KBK_CODE, 22, 3)
                                   WHEN (KBK_CODE LIKE '%-%') and (LENGTH(KBK_CODE)=27) THEN SUBSTR (KBK_CODE, 25, 3)
                                   ELSE NULL
