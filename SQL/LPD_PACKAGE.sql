@@ -290,7 +290,7 @@ create or replace package body LPD is
         dbms_output.new_line;
     
         -- Запись в лог
-        WRITE_LOG(p_name_object => 'LOAD_PRIMARY_DATA',
+        WRITE_LOG(p_name_object => 'LPD.LOAD_PRIMARY_DATA',
                   p_description => 'Загрузка первичных данных (начало)',
                   p_version_date => version_date);
 
@@ -397,7 +397,7 @@ create or replace package body LPD is
         l_res := l_iteration_num;
     
         -- Запись в лог
-        WRITE_LOG(p_name_object => 'LOAD_PRIMARY_DATA',
+        WRITE_LOG(p_name_object => 'LPD.LOAD_PRIMARY_DATA',
                   p_description => 'Загрузка первичных данных (конец)',
                   p_version_date => version_date);
 
@@ -434,7 +434,7 @@ create or replace package body LPD is
             -- Запись в лог
             WRITE_LOG(p_error_num => err_code,
                       p_error_message => err_message,
-                      p_name_object => 'LOAD_PRIMARY_DATA',
+                      p_name_object => 'LPD.LOAD_PRIMARY_DATA',
                       p_description => 'Загрузка первичных данных (failed!)',
                       p_operation_type => 0,
                       p_version_date => version_date);
