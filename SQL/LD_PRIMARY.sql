@@ -1,7 +1,7 @@
 /* Процедура инициации загрузки первичных данных */
 
 create or replace procedure LD_PRIMARY (
-    v_version_date in date default trunc(sysdate,'dd')
+    v_version_date in date default trunc(sysdate, 'dd')
 ) is 
 
     res number;

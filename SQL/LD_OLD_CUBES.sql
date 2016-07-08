@@ -1,7 +1,7 @@
 /* Процедура инициации сборки старых кубов */
 
 create or replace procedure LD_OLD_CUBES (
-    v_version_date in date default trunc(sysdate,'dd')
+    v_version_date in date default trunc(sysdate, 'dd')
 ) is 
 
     v_res_r1 number;
