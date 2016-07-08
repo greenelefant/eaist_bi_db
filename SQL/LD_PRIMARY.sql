@@ -22,17 +22,7 @@ begin
 
     s_date := systimestamp;
     
-    /* Загрузка первичных данных - вариант №1 (через процедуры) */
-
-    /*
-    load_org_joint;
-    v_res2 := loadanalystsdata_eaist2;         
-    v_res1 := loadanalystdata_eaist1;
-    v_res4 := loadanalystdata_purchase_small;        
-    lnk_res := load_lnk_tables;
-    */
-    
-    /* Загрузка первичных данных - вариант №2 (через таблицу) */
+    /* Загрузка первичных данных */
 
     res := LPD.LOAD_PRIMARY_DATA;
 
