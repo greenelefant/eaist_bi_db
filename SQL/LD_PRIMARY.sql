@@ -22,8 +22,7 @@ begin
 
     s_date := systimestamp;
     
-    /* Загрузка первичных данных */
-
+    -- Загрузка первичных данных
     res := LPD.LOAD_PRIMARY_DATA;
 
     -- Запись в лог
