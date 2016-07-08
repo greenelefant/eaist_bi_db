@@ -1,5 +1,5 @@
 /*
-  Скрипт проверки запроса из таблицы f_sp_sql_primary_data_load
+  Скрипт выполнения запроса из таблицы f_sp_sql_primary_data_load
     для заливки первичных данных
 */
 
@@ -20,7 +20,7 @@ declare
     id_data_source_aux number;
     
     -- Дата среза
-    version_date date := trunc(sysdate + 10, 'dd');
+    version_date date := trunc(sysdate, 'dd');
     
     -- Время старта
     start_dt timestamp with time zone;
@@ -51,8 +51,8 @@ begin
     -- Тестовое выполнение запроса
     execute immediate str using id_data_source, id_data_source_aux, version_date, out v_row_counter;
     
-    -- Откат транзакции
-    rollback;
+    -- Подтверждение транзакции
+    commit;
     
     -- Вывод в консоль
     dbms_output.put_line('OK');
