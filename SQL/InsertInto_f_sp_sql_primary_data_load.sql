@@ -960,6 +960,65 @@ END;#';
 
 END;#';
 
+    -- LNK_SUPPLIERS_UNITED
+    idx := idx + 1;
+    rec_array(idx).table_name := 'LNK_SUPPLIERS_UNITED';
+    rec_array(idx).sql_name := 'LNK_SUPPLIERS_UNITED';
+    rec_array(idx).description := 'Связь между поставщиками и объединенными поставщиками';
+    rec_array(idx).execute_order := idx * 100;
+    rec_array(idx).id_data_source := 1;
+    rec_array(idx).id_data_source_aux := 2;
+    rec_array(idx).is_actual := 1;
+    rec_array(idx).sql_text := start_str || q'#
+        INSERT INTO LNK_SUPPLIERS_UNITED (SUPPLIER_ID,ID_DATA_SOURCE,UNITED_SUPPLIER_ID,UNITED_SOURCE_ID,UNITED_SUPPLIER_CID,VERSION_DATE, FORMATTED_NAME)
+        
+        SELECT id, id_data_source, id_eaist2, id_data_source_j, id_eaist2||'_'||id_data_source_j, V_VERSION_DATE, formatted_name 
+        FROM 
+        (SELECT c.id, c.id_data_source, oj.id_eaist2, oj.id_data_source  id_data_source_j, c.formatted_name
+        FROM sp_organization c
+        INNER JOIN (SELECT id_eaist1, max(id_eaist2) id_eaist2, V_ID_DATA_SOURCE_AUX id_data_source FROM sp_organization_joint 
+                    WHERE version_date=V_VERSION_DATE and is_supplier=1 and id_eaist1 IS NOT NULL and id_eaist2 IS NOT NULL
+                    group by id_eaist1) oj
+        ON c.id=oj.id_eaist1 
+        WHERE c.id_data_source=V_ID_DATA_SOURCE and c.version_date=V_VERSION_DATE
+        
+        UNION ALL
+        
+        SELECT c.id, c.id_data_source, oj.id_eaist1, oj.id_data_source  id_data_source_j, c.formatted_name
+        FROM sp_organization c
+        INNER JOIN (select  id_eaist1, id_eaist2, V_ID_DATA_SOURCE id_data_source from sp_organization_joint WHERE version_date=V_VERSION_DATE and is_supplier=1 and id_eaist1 IS NOT NULL and id_eaist2 is null) oj
+        on c.id=oj.id_eaist1 
+        WHERE c.id_data_source=V_ID_DATA_SOURCE and c.version_date=V_VERSION_DATE
+        
+        UNION ALL
+        
+        SELECT c.id, c.id_data_source, c.id id_eaist2, c.id_data_source id_data_source_j, c.formatted_name
+        FROM sp_organization c
+        WHERE c.id_data_source=V_ID_DATA_SOURCE_AUX and c.version_date=V_VERSION_DATE and c.is_supplier=1
+        
+        UNION ALL
+        
+        SELECT c.id, c.id_data_source, oj.id_eaist2, oj.id_data_source   id_data_source_j, c.formatted_name
+        FROM sp_organization c
+        INNER JOIN (SELECT id_eaist1, max(id_eaist2) id_eaist2, V_ID_DATA_SOURCE_AUX id_data_source FROM sp_organization_joint 
+                    WHERE version_date=V_VERSION_DATE and is_supplier=1 and id_eaist1 IS NOT NULL and id_eaist2 IS NOT NULL
+                    group by id_eaist1) oj
+        on c.id=oj.id_eaist1 
+        WHERE c.id_data_source=4 and c.version_date=V_VERSION_DATE
+        
+        UNION ALL
+        
+        SELECT c.id, c.id_data_source, oj.id_eaist1, oj.id_data_source  id_data_source_j, c.formatted_name
+        FROM sp_organization c
+        INNER JOIN (select  id_eaist1, id_eaist2, V_ID_DATA_SOURCE id_data_source from sp_organization_joint WHERE version_date=V_VERSION_DATE and is_supplier=1 and id_eaist1 IS NOT NULL and id_eaist2 is null) oj
+        on c.id=oj.id_eaist1 
+        WHERE c.id_data_source=4 and c.version_date=V_VERSION_DATE);
+
+    -- Привязка кол-ва обработанных строк
+    :V_ROWCOUNT := SQL%ROWCOUNT;
+
+END;#';
+
     -- LNK_CUSTOMERS_UNITED [LOAD_ORG_JOINT]
     idx := idx + 1;
     rec_array(idx).table_name := 'LNK_CUSTOMERS_UNITED';
