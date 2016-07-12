@@ -4011,17 +4011,21 @@ END;#';
                    paymentSumm.PAYMENT_SUMM,
                    cd.exec_date,
                    case when con.state_id=9 then exec_date.document_date else null end exec_end_Date--cd.end_exec_date
-              FROM CONTRACT@EAIST_MOS_RC con             
-              join contract_lot@eaist_mos_rc cl on con.lot_id = cl.id
+              --FROM CONTRACT@EAIST_MOS_RC con
+              FROM eaist_rc.CONTRACT@eaist_mos_shard con
+              --join contract_lot@eaist_mos_rc cl on con.lot_id = cl.id
+              join eaist_rc.contract_lot@eaist_mos_shard cl on con.lot_id = cl.id
               
               left join (select * from t_lot where version_date=trunc(sysdate) and id_data_source=2) l on l.id_entity=cl.ext_id
 
               LEFT JOIN (select lpe.lot_id, sum(pdc.purchase_sum) lot_sum, sum(pdc.purchase_sum*nvl(lpe.smp_quota,0)/100) smp_sum from d_lot_dpurchase_entry@eaist_mos_shard lpe
               join D_DETAILED_PURCHASE_SPEC@EAIST_MOS_SHARD pdc on lpe.detailed_purchase_id=pdc.dPurchase_id 
               group by lpe.lot_id) pdc on pdc.lot_id=cl.ext_id
-              LEFT JOIN (select sum(advance_cost) EP_SUMM, contract_id from contract_stage_financing@eaist_mos_rc where is_actual=1 and deleted_date is null group by contract_id) epSumm
+              --LEFT JOIN (select sum(advance_cost) EP_SUMM, contract_id from contract_stage_financing@eaist_mos_rc where is_actual=1 and deleted_date is null group by contract_id) epSumm
+              LEFT JOIN (select sum(advance_cost) EP_SUMM, contract_id from eaist_rc.contract_stage_financing@eaist_mos_shard where is_actual=1 and deleted_date is null group by contract_id) epSumm
               ON epSumm.contract_id=con.id
-              LEFT JOIN (select sum(cost_in_ruble) payment_summ, contract_id from contract_payment@eaist_mos_rc where is_actual=1 and deleted_date is null group by contract_id) paymentSumm 
+              --LEFT JOIN (select sum(cost_in_ruble) payment_summ, contract_id from contract_payment@eaist_mos_rc where is_actual=1 and deleted_date is null group by contract_id) paymentSumm 
+              LEFT JOIN (select sum(cost_in_ruble) payment_summ, contract_id from eaist_rc.contract_payment@eaist_mos_shard where is_actual=1 and deleted_date is null group by contract_id) paymentSumm 
               ON paymentSumm.contract_id=con.id
               --LEFT JOIN (select entity_id, min(created_date) term_date from contract@eaist_mos_rc where state_id=10 group by entity_id) ct on con.entity_id=ct.entity_id
               --LEFT JOIN (select entity_id, min(created_date) exec_date from contract@eaist_mos_rc where state_id=7 group by entity_id) ce on con.entity_id=ct.entity_id
@@ -4031,7 +4035,8 @@ END;#';
                           min(case when state_id=10 then created_date else null end) term_date,
                           min(case when state_id=7 then created_date else null end) exec_date,
                           min(case when state_id=9 then created_date else null end) end_exec_date
-                          from contract@eaist_mos_rc group by entity_id) cd on con.entity_id=cd.entity_id
+                          --from contract@eaist_mos_rc group by entity_id) cd on con.entity_id=cd.entity_id
+                          from eaist_rc.contract@eaist_mos_shard group by entity_id) cd on con.entity_id=cd.entity_id
                           
               LEFT JOIN
               (select distinct contract_id, document_date 
@@ -4041,21 +4046,26 @@ END;#';
                         max(cs.created_date) over(partition by cs.contract_id) max_created_date,
                         document_date,
                         max(document_date) over (partition by cs.contract_id) max_document_date
-                 from contract_stage@eaist_mos_rc cs
-                 join CONTRACT_STAGE_EXAMINATION@eaist_mos_rc cse on cs.id=cse.stage_id 
+                 --from contract_stage@eaist_mos_rc cs
+                 from eaist_rc.contract_stage@eaist_mos_shard cs
+                 --join CONTRACT_STAGE_EXAMINATION@eaist_mos_rc cse on cs.id=cse.stage_id 
+                 join eaist_rc.CONTRACT_STAGE_EXAMINATION@eaist_mos_shard cse on cs.id=cse.stage_id 
                  where cs.deleted_date is null and cse.is_actual = 1 and cse.is_violation_acceptance = 0) 
                  where avg_state=403 and created_date=max_created_date and max_document_date=document_date) exec_date on exec_date.contract_id=con.id          
               
               LEFT JOIN (SELECT distinct type_id, reasontype_id, contract_id 
-              FROM contract_stage@eaist_mos_rc ts
+              --FROM contract_stage@eaist_mos_rc ts
+              FROM eaist_rc.contract_stage@eaist_mos_shard ts
               JOIN (select stage_id, type_id, reasontype_id, created_date, max(created_date) over (partition by stage_id) max_created_date 
-                        from contract_stage_termination@eaist_mos_rc where deleted_date is null and is_actual=1) tts
+                        --from contract_stage_termination@eaist_mos_rc where deleted_date is null and is_actual=1) tts
+                        from eaist_rc.contract_stage_termination@eaist_mos_shard where deleted_date is null and is_actual=1) tts
               on ts.id=tts.stage_id and tts.created_date=tts.max_created_date and type_id is not null) tts
               on  tts.contract_id=con.id
               
               
               
-              LEFT JOIN (select distinct contract_id from CONTRACT_CLAIM@EAIST_MOS_RC WHERE DELETED_DATE IS NULL) CC ON CC.CONTRACT_ID=CON.ID
+              --LEFT JOIN (select distinct contract_id from CONTRACT_CLAIM@EAIST_MOS_RC WHERE DELETED_DATE IS NULL) CC ON CC.CONTRACT_ID=CON.ID
+              LEFT JOIN (select distinct contract_id from eaist_rc.CONTRACT_CLAIM@EAIST_MOS_shard WHERE DELETED_DATE IS NULL) CC ON CC.CONTRACT_ID=CON.ID
               left join (select id,entity_id,deleted_date, method_of_supplier_id from d_lot_version@eaist_mos_shard) lv on lv.entity_id = cl.ext_id and lv.deleted_date is null
              WHERE con.ID = con.ENTITY_ID and con.deleted_date is null and con.is_actual=1;
 
@@ -4434,7 +4444,7 @@ END;#';
                          WHERE ID_DATA_SOURCE = V_ID_DATA_SOURCE
                                AND VERSION_DATE = V_VERSION_DATE)
                     OR CONTRACT_ID IS NULL)
-                   AND (KPGZ_ID IN (SELECT id FROM N_KPGZ@EAIST_MOS_NSI)
+                   AND (KPGZ_ID IN (SELECT id FROM eaist_nsi.N_KPGZ@EAIST_MOS_RC)
                         OR KPGZ_ID IS NULL)
                    AND DELETED_DATE IS NULL;
 
@@ -5013,8 +5023,8 @@ END;#';
                 ,c.id as contract
                 ,V_ID_DATA_SOURCE
                 ,V_VERSION_DATE
-            from contract@eaist_mos_rc c
-                join contract_lot@eaist_mos_rc cl on c.lot_id = cl.id --соединяем контракт с лотом в рк
+            from eaist_rc.contract@eaist_mos_shard c
+                join eaist_rc.contract_lot@eaist_mos_shard cl on c.lot_id = cl.id --соединяем контракт с лотом в рк
                 left join (select 
                           nvl(lv.ID, maxlv.ID) ID,
                           nvl(lv.ENTITY_ID, maxlv.ENTITY_ID) ENTITY_ID
