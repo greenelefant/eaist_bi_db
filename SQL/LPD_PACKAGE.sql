@@ -52,7 +52,9 @@ create or replace package LPD is
     ) return number;
     
     /* Объявление функции загрузки первичных данных */
-    function LOAD_PRIMARY_DATA return number;
+    function LOAD_PRIMARY_DATA(
+        p_start_execute_order number := 0
+    ) return number;
 
 end LPD;
 /
@@ -246,7 +248,9 @@ create or replace package body LPD is
     end EXECUTE_SQL;
     
     /* Функция загрузки первичных данных */
-    function LOAD_PRIMARY_DATA return number is
+    function LOAD_PRIMARY_DATA(
+        p_start_execute_order number := 0
+    ) return number is
         
         -- Результат функции
         l_res number := 0;
@@ -276,6 +280,9 @@ create or replace package body LPD is
         -- Индекс массива
         l_idx binary_integer := 1;
         
+        -- Начальное значение порядка выполнения
+        l_start_execute_order number := p_start_execute_order;
+        
     begin
     
         -- Инициализация DBMS_OUTPUT
@@ -299,7 +306,7 @@ create or replace package body LPD is
         
             select *
                 from f_sp_sql_primary_data_load
-                where is_actual = 1
+                where is_actual = 1 and execute_order >= l_start_execute_order
                 order by execute_order
         
         ) loop

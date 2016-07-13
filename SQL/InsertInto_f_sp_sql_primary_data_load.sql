@@ -960,6 +960,65 @@ END;#';
 
 END;#';
 
+    -- LNK_SUPPLIERS_UNITED
+    idx := idx + 1;
+    rec_array(idx).table_name := 'LNK_SUPPLIERS_UNITED';
+    rec_array(idx).sql_name := 'LNK_SUPPLIERS_UNITED';
+    rec_array(idx).description := 'Связь между поставщиками и объединенными поставщиками';
+    rec_array(idx).execute_order := idx * 100;
+    rec_array(idx).id_data_source := 1;
+    rec_array(idx).id_data_source_aux := 2;
+    rec_array(idx).is_actual := 1;
+    rec_array(idx).sql_text := start_str || q'#
+        INSERT INTO LNK_SUPPLIERS_UNITED (SUPPLIER_ID,ID_DATA_SOURCE,UNITED_SUPPLIER_ID,UNITED_SOURCE_ID,UNITED_SUPPLIER_CID,VERSION_DATE, FORMATTED_NAME)
+        
+        SELECT id, id_data_source, id_eaist2, id_data_source_j, id_eaist2||'_'||id_data_source_j, V_VERSION_DATE, formatted_name 
+        FROM 
+        (SELECT c.id, c.id_data_source, oj.id_eaist2, oj.id_data_source  id_data_source_j, c.formatted_name
+        FROM sp_organization c
+        INNER JOIN (SELECT id_eaist1, max(id_eaist2) id_eaist2, V_ID_DATA_SOURCE_AUX id_data_source FROM sp_organization_joint 
+                    WHERE version_date=V_VERSION_DATE and is_supplier=1 and id_eaist1 IS NOT NULL and id_eaist2 IS NOT NULL
+                    group by id_eaist1) oj
+        ON c.id=oj.id_eaist1 
+        WHERE c.id_data_source=V_ID_DATA_SOURCE and c.version_date=V_VERSION_DATE
+        
+        UNION ALL
+        
+        SELECT c.id, c.id_data_source, oj.id_eaist1, oj.id_data_source  id_data_source_j, c.formatted_name
+        FROM sp_organization c
+        INNER JOIN (select  id_eaist1, id_eaist2, V_ID_DATA_SOURCE id_data_source from sp_organization_joint WHERE version_date=V_VERSION_DATE and is_supplier=1 and id_eaist1 IS NOT NULL and id_eaist2 is null) oj
+        on c.id=oj.id_eaist1 
+        WHERE c.id_data_source=V_ID_DATA_SOURCE and c.version_date=V_VERSION_DATE
+        
+        UNION ALL
+        
+        SELECT c.id, c.id_data_source, c.id id_eaist2, c.id_data_source id_data_source_j, c.formatted_name
+        FROM sp_organization c
+        WHERE c.id_data_source=V_ID_DATA_SOURCE_AUX and c.version_date=V_VERSION_DATE and c.is_supplier=1
+        
+        UNION ALL
+        
+        SELECT c.id, c.id_data_source, oj.id_eaist2, oj.id_data_source   id_data_source_j, c.formatted_name
+        FROM sp_organization c
+        INNER JOIN (SELECT id_eaist1, max(id_eaist2) id_eaist2, V_ID_DATA_SOURCE_AUX id_data_source FROM sp_organization_joint 
+                    WHERE version_date=V_VERSION_DATE and is_supplier=1 and id_eaist1 IS NOT NULL and id_eaist2 IS NOT NULL
+                    group by id_eaist1) oj
+        on c.id=oj.id_eaist1 
+        WHERE c.id_data_source=4 and c.version_date=V_VERSION_DATE
+        
+        UNION ALL
+        
+        SELECT c.id, c.id_data_source, oj.id_eaist1, oj.id_data_source  id_data_source_j, c.formatted_name
+        FROM sp_organization c
+        INNER JOIN (select  id_eaist1, id_eaist2, V_ID_DATA_SOURCE id_data_source from sp_organization_joint WHERE version_date=V_VERSION_DATE and is_supplier=1 and id_eaist1 IS NOT NULL and id_eaist2 is null) oj
+        on c.id=oj.id_eaist1 
+        WHERE c.id_data_source=4 and c.version_date=V_VERSION_DATE);
+
+    -- Привязка кол-ва обработанных строк
+    :V_ROWCOUNT := SQL%ROWCOUNT;
+
+END;#';
+
     -- LNK_CUSTOMERS_UNITED [LOAD_ORG_JOINT]
     idx := idx + 1;
     rec_array(idx).table_name := 'LNK_CUSTOMERS_UNITED';
@@ -1744,52 +1803,6 @@ END;#';
                        WHERE DELETED_DATE IS NULL) dnk on nk.ENTITY_ID=dnk.ENTITY_ID
             LEFT JOIN n_okpd@EAIST_MOS_NSI o ON nkn.OKPD_ID = o.id
             WHERE dnk.ID is null;
-
-    -- Привязка кол-ва обработанных строк
-    :V_ROWCOUNT := SQL%ROWCOUNT;
-
-END;#';
-
-    -- SP_KPGZ_MERGE [EAIST2]
-    idx := idx + 1;
-    rec_array(idx).table_name := 'SP_KPGZ';
-    rec_array(idx).sql_name := 'SP_KPGZ_MERGE [EAIST2]';
-    rec_array(idx).description := 'Обновление для задачи ускорения загрузки view SP_KPGZ_TREE_V';
-    rec_array(idx).execute_order := idx * 100;
-    rec_array(idx).id_data_source := 2;
-    rec_array(idx).is_actual := 1;
-    rec_array(idx).sql_text := start_str || q'#
-    merge into sp_kpgz dst
-    using (
-            select
-                  key_sort,
-                  kpgz_level,
-                  rownum rn,
-                  id,
-                  id_data_source ID_SOURCE,
-                  id_parent,
-                  id_data_source ID_PARENT_SOURCE, 
-                  level id_level,
-                  name as formatted_name,
-                  code
-                from (
-                        select
-                              key_sort,
-                              kpgz_level,
-                              id,
-                              id_data_source,
-                              case when id_parent is not null then id_parent else 0 end id_parent,
-                              '('||code||') ' || name name,
-                              code
-                            from sp_kpgz
-                            where trunc(version_date, 'dd') = V_VERSION_DATE and id_data_source = V_ID_DATA_SOURCE
-                        union
-                        select 1, 1, 0, 2, null, 'ВСЕ КПГЗ', '0' from dual
-                     )
-                connect by nocycle prior id = id_parent start with id = 0
-          ) src
-          on (dst.id = src.id and trunc(dst.version_date, 'dd') = V_VERSION_DATE and dst.id_data_source = V_ID_DATA_SOURCE)
-          when matched then update set dst.key_sort = src.rn, dst.kpgz_level = src.id_level;
 
     -- Привязка кол-ва обработанных строк
     :V_ROWCOUNT := SQL%ROWCOUNT;
@@ -4003,17 +4016,21 @@ END;#';
                    paymentSumm.PAYMENT_SUMM,
                    cd.exec_date,
                    case when con.state_id=9 then exec_date.document_date else null end exec_end_Date--cd.end_exec_date
-              FROM CONTRACT@EAIST_MOS_RC con             
-              join contract_lot@eaist_mos_rc cl on con.lot_id = cl.id
+              --FROM CONTRACT@EAIST_MOS_RC con
+              FROM eaist_rc.CONTRACT@eaist_mos_shard con
+              --join contract_lot@eaist_mos_rc cl on con.lot_id = cl.id
+              join eaist_rc.contract_lot@eaist_mos_shard cl on con.lot_id = cl.id
               
               left join (select * from t_lot where version_date=trunc(sysdate) and id_data_source=2) l on l.id_entity=cl.ext_id
 
               LEFT JOIN (select lpe.lot_id, sum(pdc.purchase_sum) lot_sum, sum(pdc.purchase_sum*nvl(lpe.smp_quota,0)/100) smp_sum from d_lot_dpurchase_entry@eaist_mos_shard lpe
               join D_DETAILED_PURCHASE_SPEC@EAIST_MOS_SHARD pdc on lpe.detailed_purchase_id=pdc.dPurchase_id 
               group by lpe.lot_id) pdc on pdc.lot_id=cl.ext_id
-              LEFT JOIN (select sum(advance_cost) EP_SUMM, contract_id from contract_stage_financing@eaist_mos_rc where is_actual=1 and deleted_date is null group by contract_id) epSumm
+              --LEFT JOIN (select sum(advance_cost) EP_SUMM, contract_id from contract_stage_financing@eaist_mos_rc where is_actual=1 and deleted_date is null group by contract_id) epSumm
+              LEFT JOIN (select sum(advance_cost) EP_SUMM, contract_id from eaist_rc.contract_stage_financing@eaist_mos_shard where is_actual=1 and deleted_date is null group by contract_id) epSumm
               ON epSumm.contract_id=con.id
-              LEFT JOIN (select sum(cost_in_ruble) payment_summ, contract_id from contract_payment@eaist_mos_rc where is_actual=1 and deleted_date is null group by contract_id) paymentSumm 
+              --LEFT JOIN (select sum(cost_in_ruble) payment_summ, contract_id from contract_payment@eaist_mos_rc where is_actual=1 and deleted_date is null group by contract_id) paymentSumm 
+              LEFT JOIN (select sum(cost_in_ruble) payment_summ, contract_id from eaist_rc.contract_payment@eaist_mos_shard where is_actual=1 and deleted_date is null group by contract_id) paymentSumm 
               ON paymentSumm.contract_id=con.id
               --LEFT JOIN (select entity_id, min(created_date) term_date from contract@eaist_mos_rc where state_id=10 group by entity_id) ct on con.entity_id=ct.entity_id
               --LEFT JOIN (select entity_id, min(created_date) exec_date from contract@eaist_mos_rc where state_id=7 group by entity_id) ce on con.entity_id=ct.entity_id
@@ -4023,7 +4040,8 @@ END;#';
                           min(case when state_id=10 then created_date else null end) term_date,
                           min(case when state_id=7 then created_date else null end) exec_date,
                           min(case when state_id=9 then created_date else null end) end_exec_date
-                          from contract@eaist_mos_rc group by entity_id) cd on con.entity_id=cd.entity_id
+                          --from contract@eaist_mos_rc group by entity_id) cd on con.entity_id=cd.entity_id
+                          from eaist_rc.contract@eaist_mos_shard group by entity_id) cd on con.entity_id=cd.entity_id
                           
               LEFT JOIN
               (select distinct contract_id, document_date 
@@ -4033,21 +4051,26 @@ END;#';
                         max(cs.created_date) over(partition by cs.contract_id) max_created_date,
                         document_date,
                         max(document_date) over (partition by cs.contract_id) max_document_date
-                 from contract_stage@eaist_mos_rc cs
-                 join CONTRACT_STAGE_EXAMINATION@eaist_mos_rc cse on cs.id=cse.stage_id 
+                 --from contract_stage@eaist_mos_rc cs
+                 from eaist_rc.contract_stage@eaist_mos_shard cs
+                 --join CONTRACT_STAGE_EXAMINATION@eaist_mos_rc cse on cs.id=cse.stage_id 
+                 join eaist_rc.CONTRACT_STAGE_EXAMINATION@eaist_mos_shard cse on cs.id=cse.stage_id 
                  where cs.deleted_date is null and cse.is_actual = 1 and cse.is_violation_acceptance = 0) 
                  where avg_state=403 and created_date=max_created_date and max_document_date=document_date) exec_date on exec_date.contract_id=con.id          
               
               LEFT JOIN (SELECT distinct type_id, reasontype_id, contract_id 
-              FROM contract_stage@eaist_mos_rc ts
+              --FROM contract_stage@eaist_mos_rc ts
+              FROM eaist_rc.contract_stage@eaist_mos_shard ts
               JOIN (select stage_id, type_id, reasontype_id, created_date, max(created_date) over (partition by stage_id) max_created_date 
-                        from contract_stage_termination@eaist_mos_rc where deleted_date is null and is_actual=1) tts
+                        --from contract_stage_termination@eaist_mos_rc where deleted_date is null and is_actual=1) tts
+                        from eaist_rc.contract_stage_termination@eaist_mos_shard where deleted_date is null and is_actual=1) tts
               on ts.id=tts.stage_id and tts.created_date=tts.max_created_date and type_id is not null) tts
               on  tts.contract_id=con.id
               
               
               
-              LEFT JOIN (select distinct contract_id from CONTRACT_CLAIM@EAIST_MOS_RC WHERE DELETED_DATE IS NULL) CC ON CC.CONTRACT_ID=CON.ID
+              --LEFT JOIN (select distinct contract_id from CONTRACT_CLAIM@EAIST_MOS_RC WHERE DELETED_DATE IS NULL) CC ON CC.CONTRACT_ID=CON.ID
+              LEFT JOIN (select distinct contract_id from eaist_rc.CONTRACT_CLAIM@EAIST_MOS_shard WHERE DELETED_DATE IS NULL) CC ON CC.CONTRACT_ID=CON.ID
               left join (select id,entity_id,deleted_date, method_of_supplier_id from d_lot_version@eaist_mos_shard) lv on lv.entity_id = cl.ext_id and lv.deleted_date is null
              WHERE con.ID = con.ENTITY_ID and con.deleted_date is null and con.is_actual=1;
 
@@ -4426,7 +4449,7 @@ END;#';
                          WHERE ID_DATA_SOURCE = V_ID_DATA_SOURCE
                                AND VERSION_DATE = V_VERSION_DATE)
                     OR CONTRACT_ID IS NULL)
-                   AND (KPGZ_ID IN (SELECT id FROM N_KPGZ@EAIST_MOS_NSI)
+                   AND (KPGZ_ID IN (SELECT id FROM eaist_nsi.N_KPGZ@EAIST_MOS_RC)
                         OR KPGZ_ID IS NULL)
                    AND DELETED_DATE IS NULL;
 
@@ -5006,8 +5029,8 @@ END;#';
                 ,c.id as contract
                 ,V_ID_DATA_SOURCE
                 ,V_VERSION_DATE
-            from contract@eaist_mos_rc c
-                join contract_lot@eaist_mos_rc cl on c.lot_id = cl.id --соединяем контракт с лотом в рк
+            from eaist_rc.contract@eaist_mos_shard c
+                join eaist_rc.contract_lot@eaist_mos_shard cl on c.lot_id = cl.id --соединяем контракт с лотом в рк
                 left join (select 
                           nvl(lv.ID, maxlv.ID) ID,
                           nvl(lv.ENTITY_ID, maxlv.ENTITY_ID) ENTITY_ID
@@ -7766,6 +7789,52 @@ END;#';
     rec_array(idx).sql_text := start_str || q'#
        insert into LNK_SOURCE_FINANCE (ID, EAIST1_ID, EAIST2_ID, EAIST4_ID, VERSION_DATE) 
        SELECT ID, EAIST1_ID, EAIST2_ID, EAIST4_ID, V_VERSION_DATE from LNK_SOURCE_FINANCE where version_date=V_VERSION_DATE-1;
+
+    -- Привязка кол-ва обработанных строк
+    :V_ROWCOUNT := SQL%ROWCOUNT;
+
+END;#';
+
+    -- SP_KPGZ_MERGE [EAIST2]
+    idx := idx + 1;
+    rec_array(idx).table_name := 'SP_KPGZ';
+    rec_array(idx).sql_name := 'SP_KPGZ_MERGE [EAIST2]';
+    rec_array(idx).description := 'Обновление для задачи ускорения загрузки view SP_KPGZ_TREE_V';
+    rec_array(idx).execute_order := idx * 100;
+    rec_array(idx).id_data_source := 2;
+    rec_array(idx).is_actual := 1;
+    rec_array(idx).sql_text := start_str || q'#
+    merge into sp_kpgz dst
+    using (
+            select
+                  key_sort,
+                  kpgz_level,
+                  rownum rn,
+                  id,
+                  id_data_source ID_SOURCE,
+                  id_parent,
+                  id_data_source ID_PARENT_SOURCE, 
+                  level id_level,
+                  name as formatted_name,
+                  code
+                from (
+                        select
+                              key_sort,
+                              kpgz_level,
+                              id,
+                              id_data_source,
+                              case when id_parent is not null then id_parent else 0 end id_parent,
+                              '('||code||') ' || name name,
+                              code
+                            from sp_kpgz
+                            where trunc(version_date, 'dd') = V_VERSION_DATE and id_data_source = V_ID_DATA_SOURCE
+                        union
+                        select 1, 1, 0, 2, null, 'ВСЕ КПГЗ', '0' from dual
+                     )
+                connect by nocycle prior id = id_parent start with id = 0
+          ) src
+          on (dst.id = src.id and trunc(dst.version_date, 'dd') = V_VERSION_DATE and dst.id_data_source = V_ID_DATA_SOURCE)
+          when matched then update set dst.key_sort = src.rn, dst.kpgz_level = src.id_level;
 
     -- Привязка кол-ва обработанных строк
     :V_ROWCOUNT := SQL%ROWCOUNT;

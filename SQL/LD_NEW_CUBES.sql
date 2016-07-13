@@ -1,7 +1,7 @@
 /* Процедура инициации сборки новых кубов */
 
 create or replace procedure LD_NEW_CUBES (
-    v_version_date in date default trunc(sysdate,'dd')
+    v_version_date in date default trunc(sysdate, 'dd')
 ) is 
 
     v_c1l number;
