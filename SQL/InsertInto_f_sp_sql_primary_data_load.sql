@@ -2867,7 +2867,7 @@ END;#';
                         max(case when stat.status_id=7 and ver.id=ver.max_id then status_date else null end) over (partition by ver.entity_id) last_change_pub_date,
                         min(case when stat.status_id=4 then status_date else null end) over (partition by pse.customer_id, pse.year) first_approve_date,
                         max(case when stat.status_id=4 and ver.id=ver.max_id then status_date else null end) over (partition by ver.entity_id) last_change_approve_date
-                        FROM (select v.id, v.entity_id, max(id) over (partition by entity_id) max_id from D_PLAN_SCHEDULE_VERSION@EAIST_MOS_SHARD v  where deleted_date is null) ver
+                        FROM (select v.id, v.entity_id, max(id) over (partition by entity_id) max_id from D_PLAN_SCHEDULE_VERSION@EAIST_MOS_SHARD v) ver
                         JOIN D_PLAN_SCHEDULE_STATUS_HISTORY@EAIST_MOS_SHARD stat
                         ON ver.id=stat.version_id
                         JOIN D_PLAN_SCHEDULE_ENTITY@EAIST_MOS_SHARD pse
