@@ -2121,7 +2121,8 @@ END;#';
                                                CANCEL_DATE,
                                                REQUEST_END_DATE,
                                                FIRST_PUBLSIH_DATE,
-                                               LAST_PUBLISH_DATE)
+                                               LAST_PUBLISH_DATE,
+											   PREV_ENTITY_ID)
 
 SELECT pv.ID as Id1,
                            pd.PROCEDURE_DATE AS PUBLICATION_DATE,
@@ -2179,7 +2180,8 @@ SELECT pv.ID as Id1,
                            cancel_pv.created_Date CANCEL_DATE,
                            pre.PROCEDURE_DATE as REQUEST_END_DATE,
                            dates.first_pub_date,
-                           dates.last_pub_date
+                           dates.last_pub_date,
+						   pe.published_id
                     FROM (select id,entity_id, created_date, PROCUREMENT_SUBJECT,ACCOMODATION_LEVEL,UNSUCCESSFUL_PURCHASE,status_id,state_id, ORGANIZER_ID from D_PROCEDURE_VERSION@EAIST_MOS_SHARD where deleted_date IS NULL) pv
                     --Получаем дату создания версии когда статус перешел в опубликовано              
                     --Устраняем дубли в D_PROCEDURE_VERSION
@@ -2336,7 +2338,8 @@ END;#';
                                     GUARANTEE_PERCENT_AMOUNT,
                                     last_change_publish_date,
                                     first_approve_date,
-                                    last_change_approve_date)
+                                    last_change_approve_date,
+									prev_entity_id)
 			SELECT lv.ID,
 							   lv.REASON_CONCLUSION_CONTRACT,
 							   lv.CONTRACT_NMC AS COST,
@@ -2381,7 +2384,8 @@ END;#';
 							   lv.GUARANTEE_PERCENT_AMOUNT,
 							   dates.last_change_pub_date,
 							   dates.first_approve_date,
-							   dates.last_change_approve_date
+							   dates.last_change_approve_date,
+							   le.published_id
 			FROM (select  lv.*,  nvl(pl.PROCEDURE_ID,ple1.PROCEDURE_ID) AS TENDER_ID, nvl(pl.LOT_NUM,ple1.LOT_NUM) AS LOT_NUM
 				  FROM (select 
 											nvl(lv.ID, maxlv.ID) ID,
