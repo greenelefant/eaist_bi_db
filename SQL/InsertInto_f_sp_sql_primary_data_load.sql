@@ -2838,7 +2838,7 @@ END;#';
     rec_array(idx).is_actual := 1;
     rec_array(idx).sql_text := start_str || q'#
         INSERT INTO T_PURCHASE_SHEDULE (ID,YEAR,CUSTOMER_ID,PERIOD,APPROVED_DATE,PUBLICATION_DATE,ID_DATA_SOURCE,VERSION_DATE,entity_id,IS_ACTUAL,ID_STATUS, 
-                                        LAST_CHANGE_DATE, VERSION_NUMBER, FIRST_PUBLISH_DATE, LAST_CHANGE_PUBLISH_DATE, FIRST_APPROVE_DATE, LAST_CHANGE_APPROVE_DATE)
+                                        LAST_CHANGE_DATE, VERSION_NUMBER, FIRST_PUBLISH_DATE, LAST_CHANGE_PUBLISH_DATE, FIRST_APPROVE_DATE, LAST_CHANGE_APPROVE_DATE, IS_ACTUAL_ENTITY)
             SELECT psv.ID idv,
                    pse.YEAR,
                    pse.CUSTOMER_ID,
@@ -2855,20 +2855,23 @@ END;#';
                    dates.first_pub_date,
                    dates.last_change_pub_date,
                    dates.first_approve_date,
-                   dates.last_change_approve_date
+                   dates.last_change_approve_date,
+                   case when max(pse.version) over (partition by pse.customer_id, year) = pse.version then 1 else 0 end IS_ACTUAL_ENTITY
               FROM    D_PLAN_SCHEDULE_ENTITY@EAIST_MOS_SHARD pse
               JOIN (select p.id,p.entity_id,p.approved_date,p.publication_date,p.ACTUAL,p.status_id, p.version, row_number() over (partition by p.entity_id order by id desc) rn 
-              from D_PLAN_SCHEDULE_VERSION@EAIST_MOS_SHARD p)  psv on pse.id=psv.entity_id and psv.rn=1      
+              from D_PLAN_SCHEDULE_VERSION@EAIST_MOS_SHARD p where deleted_date is null)  psv on pse.id=psv.entity_id and psv.rn=1      
               left join (select entity_id, max(status_date) status_date from D_PLAN_SCHEDULE_STATUS_HISTORY@eaist_mos_shard group by entity_id) psh on psh.entity_id=pse.id
               LEFT JOIN (select * from (
                         select distinct ver.entity_id,
-                        min(case when stat.status_id=7 then status_date else null end) over (partition by ver.entity_id) first_pub_date,
+                        min(case when stat.status_id=7 then status_date else null end) over (partition by pse.customer_id, pse.year) first_pub_date,
                         max(case when stat.status_id=7 and ver.id=ver.max_id then status_date else null end) over (partition by ver.entity_id) last_change_pub_date,
-                        min(case when stat.status_id=4 then status_date else null end) over (partition by ver.entity_id) first_approve_date,
+                        min(case when stat.status_id=4 then status_date else null end) over (partition by pse.customer_id, pse.year) first_approve_date,
                         max(case when stat.status_id=4 and ver.id=ver.max_id then status_date else null end) over (partition by ver.entity_id) last_change_approve_date
-                        FROM (select v.id, v.entity_id, max(id) over (partition by entity_id) max_id from D_PLAN_SCHEDULE_VERSION@EAIST_MOS_SHARD v) ver
+                        FROM (select v.id, v.entity_id, max(id) over (partition by entity_id) max_id from D_PLAN_SCHEDULE_VERSION@EAIST_MOS_SHARD v  where deleted_date is null) ver
                         JOIN D_PLAN_SCHEDULE_STATUS_HISTORY@EAIST_MOS_SHARD stat
                         ON ver.id=stat.version_id
+                        JOIN D_PLAN_SCHEDULE_ENTITY@EAIST_MOS_SHARD pse
+                        ON pse.id=ver.entity_id
                         ) where coalesce(first_pub_date, last_change_pub_date, first_approve_date, last_change_approve_Date) is not null) dates on dates.entity_id=pse.id;
 
     -- Привязка кол-ва обработанных строк
@@ -5144,7 +5147,8 @@ select  distinct
               d.journal_number REQUEST_NUMBER, 
               d.journal_number REGISTRATION_NUMBER,
               win.place place,
-              (case when d.admitted_second=1 or (d.admitted_second is null and d.admitted is null) or (eo.id is not null) then 3 
+              --(case when d.admitted_second=1 or (d.admitted_second is null and d.admitted is null) or (eo.id is not null) then 3 
+              (case when d.admitted_second=1 or (eo.id is not null) then 3 --edited by Abramov 18.07.2016 10:36 task 1038
                    when d.admitted=1 and d.admitted_second is null and eo.id is null then 1
                    else 2 end) as STATE,
               4 METHOD_OF_SUPPLIER_ID,
