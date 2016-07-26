@@ -4025,7 +4025,7 @@ END;#';
                    epSumm.EP_SUMM,
                    paymentSumm.PAYMENT_SUMM,
                    cd.exec_date,
-                   case when con.state_id=9 then exec_date.document_date else null end exec_end_Date--cd.end_exec_date
+                   case when con.state_id in (7, 9) then exec_date.document_date else null end exec_end_Date--cd.end_exec_date
               --FROM CONTRACT@EAIST_MOS_RC con
               FROM eaist_rc.CONTRACT@eaist_mos_shard con
               --join contract_lot@eaist_mos_rc cl on con.lot_id = cl.id
