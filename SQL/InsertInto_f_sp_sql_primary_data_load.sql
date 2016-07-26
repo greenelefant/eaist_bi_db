@@ -6466,7 +6466,8 @@ END;#';
                                                 ,ID_STATUS                 
                                                 ,ID_CUSTOMER             
                                                 ,ID_SUPPLIER        
-                                                ,CONTRACT_NUMBER    
+                                                ,CONTRACT_NUMBER 
+                                                ,registry_number_oos
                                                 ,CONTRACT_DATE   
                                                 ,COST_IN_RUBLE
                                                 ,DURATION_START_DATE -- дата начала действия контракта
@@ -6490,7 +6491,8 @@ END;#';
             select ID                   
                     ,WF_STATE_ID        
                     ,CUSTOMER_ENTITY_ID 
-                    ,SUPPLIER_ENTITY_ID 
+                    ,SUPPLIER_ENTITY_ID
+                    ,SIGN_NUMBER
                     ,REESTR_NUMBER_807PP            
                     ,SIGN_DATE          
                     ,SUMM   
@@ -6516,7 +6518,7 @@ END;#';
             left join (select max(fact_end_date) fact_end, contract_id from execution@tkdbn1 group by contract_id) fed on c.id=fed.contract_id --Фактическая дата окончания срока исполнения/Фактическая дата окончания контракта/Фактическая дата расторжения государственного контракта
             left join (select max(plan_end_date) plan_end, contract_id from execution@tkdbn1 group by contract_id) ped on c.id=ped.contract_id --Плановая дата окончания срока исполнения/Плановая дата окончания контракта/Плановая дата расторжения государственного контракта
             left join (select  termination_reason_id,termination_id,contract_id from execution@tkdbn1 where termination_reason_id is not null and type_id=71 and status_id=1203) tr on c.id=tr.contract_id
-            left join (select nvl(sum(payment_summ),0) payment_summ, contract_id from CONTRACT_BUDJET_LIABILITY@tkdbn1 where status_id = 20001 group by contract_id) ps on c.id=ps.contract_id;
+            left join (select nvl(sum(payment_summ),0) payment_summ, contract_id from CONTRACT_BUDJET_LIABILITY@tkdbn1 where status_id = 20001 group by contract_id) ps on c.id=ps.contract_id;            
 
     -- Привязка кол-ва обработанных строк
     :V_ROWCOUNT := SQL%ROWCOUNT;
@@ -7581,7 +7583,8 @@ END;#';
                                             ,ID_STATUS                 
                                             ,ID_CUSTOMER             
                                             ,ID_SUPPLIER        
-                                            ,CONTRACT_NUMBER    
+                                            ,CONTRACT_NUMBER
+                                            ,registry_number_oos
                                             ,CONTRACT_DATE   
                                             ,COST_IN_RUBLE
                                             ,DURATION_START_DATE -- дата начала действия контракта
@@ -7604,7 +7607,8 @@ END;#';
         select ID                   
                 ,WF_STATE_ID        
                 ,CUSTOMER_ENTITY_ID 
-                ,SUPPLIER_ENTITY_ID 
+                ,SUPPLIER_ENTITY_ID
+                ,SIGN_NUMBER
                 ,REESTR_NUMBER_807PP            
                 ,SIGN_DATE          
                 ,SUMM   
@@ -7623,14 +7627,14 @@ END;#';
                 ,EXECUTION_BEGIN
                 ,sign_number 
                 --  ,ps.payment_summ - запилить таск
-                ,V_ID_DATA_SOURCE   
+                ,V_ID_DATA_SOURCE
                 ,V_VERSION_DATE
         from es_contract@tkdbn1 c
         left join (select max(fact_end_date) fact_end, contract_id from es_execution@tkdbn1 group by contract_id) fed on c.id=fed.contract_id
         left join (select max(plan_end_date) plan_end, contract_id from es_execution@tkdbn1 group by contract_id) ped on c.id=ped.contract_id
         left join (select  termination_reason_id,termination_id,contract_id from es_execution@tkdbn1 where termination_reason_id is not null and type_id=71 and status_id=1203) tr on c.id=tr.contract_id
         -- left join (select nvl(sum(payment_summ),0) payment_summ, contract_id from es_CONTRACT_BUDJET_LIABILITY@tkdbn1 where status_id = 20001 group by contract_id) ps on c.id=ps.contract_id
-        ;
+        ;   
 
     -- Привязка кол-ва обработанных строк
     :V_ROWCOUNT := SQL%ROWCOUNT;
