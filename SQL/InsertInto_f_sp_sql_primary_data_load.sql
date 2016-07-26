@@ -2842,8 +2842,9 @@ END;#';
     rec_array(idx).is_actual := 1;
     rec_array(idx).sql_text := start_str || q'#
         INSERT INTO T_PURCHASE_SHEDULE (ID,YEAR,CUSTOMER_ID,PERIOD,APPROVED_DATE,PUBLICATION_DATE,ID_DATA_SOURCE,VERSION_DATE,entity_id,IS_ACTUAL,ID_STATUS, 
-                                        LAST_CHANGE_DATE, VERSION_NUMBER, FIRST_PUBLISH_DATE, LAST_CHANGE_PUBLISH_DATE, FIRST_APPROVE_DATE, LAST_CHANGE_APPROVE_DATE, IS_ACTUAL_ENTITY)
-            SELECT psv.ID idv,
+                                        LAST_CHANGE_DATE, VERSION_NUMBER, FIRST_PUBLISH_DATE, LAST_CHANGE_PUBLISH_DATE, FIRST_APPROVE_DATE, LAST_CHANGE_APPROVE_DATE, IS_ACTUAL_ENTITY, reg_number_oos)
+
+            SELECT distinct psv.ID id,
                    pse.YEAR,
                    pse.CUSTOMER_ID,
                    pse.PERIOD,
@@ -2860,10 +2861,12 @@ END;#';
                    dates.last_change_pub_date,
                    dates.first_approve_date,
                    dates.last_change_approve_date,
-                   case when max(pse.version) over (partition by pse.customer_id, year) = pse.version then 1 else 0 end IS_ACTUAL_ENTITY
+                   case when max(pse.version) over (partition by pse.customer_id, pse.year) = pse.version then 1 else 0 end IS_ACTUAL_ENTITY,
+                   psre.oos_plan_number
               FROM    D_PLAN_SCHEDULE_ENTITY@EAIST_MOS_SHARD pse
               JOIN (select p.id,p.entity_id,p.approved_date,p.publication_date,p.ACTUAL,p.status_id, p.version, row_number() over (partition by p.entity_id order by id desc) rn 
-              from D_PLAN_SCHEDULE_VERSION@EAIST_MOS_SHARD p where deleted_date is null)  psv on pse.id=psv.entity_id and psv.rn=1      
+              from D_PLAN_SCHEDULE_VERSION@EAIST_MOS_SHARD p where deleted_date is null)  psv on pse.id=psv.entity_id and psv.rn=1    
+              join D_PLAN_SCHEDULE_ROOT_ENTITY@EAIST_MOS_SHARD psre on pse.year=psre.year and pse.customer_id=psre.customer_id
               left join (select entity_id, max(status_date) status_date from D_PLAN_SCHEDULE_STATUS_HISTORY@eaist_mos_shard group by entity_id) psh on psh.entity_id=pse.id
               LEFT JOIN (select * from (
                         select distinct ver.entity_id,
