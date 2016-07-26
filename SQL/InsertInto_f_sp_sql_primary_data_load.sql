@@ -5103,8 +5103,8 @@ END;#';
 
     -- LNK_LOT_LOT - INCLUDED_JOINT_AUCTION [EAIST2]
     idx := idx + 1;
-    rec_array(idx).table_name := 'LNK_LOT_LOT';
-    rec_array(idx).sql_name := 'LNK_LOT_LOT - INCLUDED_JOINT_AUCTION [EAIST2]';
+    rec_array(idx).table_name := 'T_LOT';
+    rec_array(idx).sql_name := 'T_LOT - INCLUDED_JOINT_AUCTION [EAIST2]';
     rec_array(idx).description := 'Обновление included_joint_auction';
     rec_array(idx).execute_order := idx * 100;
     rec_array(idx).id_data_source := 2;
@@ -5116,6 +5116,31 @@ END;#';
       on (l.id=lll.lot_id and l.id_data_source=V_ID_DATA_SOURCE and l.version_date=V_VERSION_DATE)
       when matched then update set
       l.included_joint_auction=1;
+
+    -- Привязка кол-ва обработанных строк
+    :V_ROWCOUNT := SQL%ROWCOUNT;
+
+END;#';
+
+	-- LNK_LOT_LOT - IS_UNION_TRADE [EAIST2]
+    idx := idx + 1;
+    rec_array(idx).table_name := 'T_TENDER';
+    rec_array(idx).sql_name := 'T_TENDER - IS_UNION_TRADE[EAIST2]';
+    rec_array(idx).description := 'Обновление is_union_trade';
+    rec_array(idx).execute_order := idx * 100;
+    rec_array(idx).id_data_source := 2;
+    rec_array(idx).is_actual := 1;
+    rec_array(idx).sql_text := start_str || q'#
+      --Обновление included_joint_auction из LNK_LOT_LOT
+      merge into t_tender trg
+    
+      using (select distinct t.id from
+      (select distinct lot_id, version_date, id_Data_source from LNK_LOT_LOT where id_data_source=V_ID_DATA_SOURCE and version_date=V_VERSION_DATE) lll
+      join t_lot l on lll.lot_id=l.id and lll.version_date=l.version_date and lll.id_data_source=l.id_Data_source
+      join t_tender t on t.id=l.tender_id and t.version_date=l.version_date and t.id_Data_source=l.id_data_source) src
+      on (src.id=trg.id and trg.id_data_source=V_ID_DATA_SOURCE and trg.version_date=V_VERSION_DATE)
+      when matched then update set
+      trg.is_union_trade=1;
 
     -- Привязка кол-ва обработанных строк
     :V_ROWCOUNT := SQL%ROWCOUNT;
