@@ -6563,21 +6563,41 @@ END;#';
                                                                 ,BUDGET_YEAR          
                                                                 ,ECONOMIC_SUMM        
                                                                 ,ID_DATA_SOURCE
-                                                                ,VERSION_DATE) 
-            select ID                     
-                    ,CONTRACT_ID          
-                    ,FINANCING_SOURCE_ID  
-                    ,PURPOSE_ID           
-                    ,GRBS_ID              
-                    ,FUNCTIONAL_ID        
-                    ,EXPENSE_ID           
-                    ,ECONOMIC_ID          
-                    ,SUMMA_IN_CURRENCY_NDS
-                    ,BUDGET_YEAR          
-                    ,ECONOMIC_SUMM
+                                                                ,VERSION_DATE
+                                                                ,PURPOSE_CODE
+                                                                ,GRBS_CODE
+                                                                ,EXPENSE_CODE
+                                                                ,FOLDER_CODE
+                                                                ,ECONOMIC_CODE) 
+            select CF.ID                     
+                    ,CF.CONTRACT_ID          
+                    ,CF.FINANCING_SOURCE_ID  
+                    ,CF.PURPOSE_ID --sp_target_clause           
+                    ,CF.GRBS_ID --SP_GRBS             
+                    ,CF.FUNCTIONAL_ID  --SP_TYPE_EXPENSE      
+                    ,CF.EXPENSE_ID   --SP_SECTION_BUDGET        
+                    ,CF.ECONOMIC_ID --SP_KOSGU         
+                    ,CF.SUMMA_IN_CURRENCY_NDS
+                    ,CF.BUDGET_YEAR          
+                    ,CF.ECONOMIC_SUMM
                     ,V_ID_DATA_SOURCE 
                     ,V_VERSION_DATE
-            from FINANSING@tkdbn1;
+                    ,cl.CODE PURPOSE_CODE
+                    ,GRBS.CODE GRBS_CODE
+                    ,sec.CODE EXPENSE_CODE
+                    ,exp.CODE FOLDER_CODE
+                    ,kos.CODE ECONOMIC_CODE
+            from FINANSING@tkdbn1 CF
+            LEFT JOIN REPORTS.SP_TARGET_CLAUSE cl
+                ON CF.PURPOSE_ID = cl.ID and cl.ID_DATA_SOURCE = V_ID_DATA_SOURCE   AND cl.VERSION_DATE = V_VERSION_DATE
+             LEFT JOIN REPORTS.SP_GRBS GRBS
+                ON CF.GRBS_ID = GRBS.ID AND GRBS.ID_DATA_SOURCE = V_ID_DATA_SOURCE  AND GRBS.VERSION_DATE = V_VERSION_DATE
+             LEFT JOIN REPORTS.SP_TYPE_EXPENSE EXP
+                ON CF.FUNCTIONAL_ID = EXP.ID AND EXP.ID_DATA_SOURCE = V_ID_DATA_SOURCE  AND EXP.VERSION_DATE = V_VERSION_DATE
+             LEFT JOIN REPORTS.SP_SECTION_BUDGET sec
+                ON CF.EXPENSE_ID = sec.ID AND sec.ID_DATA_SOURCE = V_ID_DATA_SOURCE  AND sec.VERSION_DATE = V_VERSION_DATE
+             LEFT JOIN REPORTS.SP_KOSGU kos 
+                ON CF.ECONOMIC_ID = kos.ID AND kos.ID_DATA_SOURCE = V_ID_DATA_SOURCE  AND kos.VERSION_DATE = V_VERSION_DATE;
 
     -- Привязка кол-ва обработанных строк
     :V_ROWCOUNT := SQL%ROWCOUNT;
@@ -7662,21 +7682,41 @@ END;#';
                                                                 ,BUDGET_YEAR          
                                                                 ,ECONOMIC_SUMM        
                                                                 ,ID_DATA_SOURCE
-                                                                ,VERSION_DATE) 
-            select ID                     
-                    ,CONTRACT_ID          
-                    ,FINANCING_SOURCE_ID  
-                    ,PURPOSE_ID           
-                    ,GRBS_ID              
-                    ,FUNCTIONAL_ID        
-                    ,EXPENSE_ID           
-                    ,ECONOMIC_ID          
-                    ,SUMMA_IN_CURRENCY_NDS
-                    ,BUDGET_YEAR          
-                    ,ECONOMIC_SUMM
-                    ,V_ID_DATA_SOURCE
+                                                                ,VERSION_DATE
+                                                                ,PURPOSE_CODE
+                                                                ,GRBS_CODE
+                                                                ,EXPENSE_CODE
+                                                                ,FOLDER_CODE
+                                                                ,ECONOMIC_CODE) 
+            select CF.ID                     
+                    ,CF.CONTRACT_ID          
+                    ,CF.FINANCING_SOURCE_ID  
+                    ,CF.PURPOSE_ID --sp_target_clause           
+                    ,CF.GRBS_ID --SP_GRBS             
+                    ,CF.FUNCTIONAL_ID  --SP_TYPE_EXPENSE      
+                    ,CF.EXPENSE_ID   --SP_SECTION_BUDGET        
+                    ,CF.ECONOMIC_ID --SP_KOSGU         
+                    ,CF.SUMMA_IN_CURRENCY_NDS
+                    ,CF.BUDGET_YEAR          
+                    ,CF.ECONOMIC_SUMM
+                    ,V_ID_DATA_SOURCE 
                     ,V_VERSION_DATE
-            from ES_FINANSING@tkdbn1;
+                    ,cl.CODE PURPOSE_CODE
+                    ,GRBS.CODE GRBS_CODE
+                    ,sec.CODE EXPENSE_CODE
+                    ,exp.CODE FOLDER_CODE
+                    ,kos.CODE ECONOMIC_CODE
+            from ES_FINANSING@tkdbn1 CF
+            LEFT JOIN REPORTS.SP_TARGET_CLAUSE cl
+                ON CF.PURPOSE_ID = cl.ID and cl.ID_DATA_SOURCE = V_ID_DATA_SOURCE   AND cl.VERSION_DATE = V_VERSION_DATE
+             LEFT JOIN REPORTS.SP_GRBS GRBS
+                ON CF.GRBS_ID = GRBS.ID AND GRBS.ID_DATA_SOURCE = V_ID_DATA_SOURCE  AND GRBS.VERSION_DATE = V_VERSION_DATE
+             LEFT JOIN REPORTS.SP_TYPE_EXPENSE EXP
+                ON CF.FUNCTIONAL_ID = EXP.ID AND EXP.ID_DATA_SOURCE = V_ID_DATA_SOURCE  AND EXP.VERSION_DATE = V_VERSION_DATE
+             LEFT JOIN REPORTS.SP_SECTION_BUDGET sec
+                ON CF.EXPENSE_ID = sec.ID AND sec.ID_DATA_SOURCE = V_ID_DATA_SOURCE  AND sec.VERSION_DATE = V_VERSION_DATE
+             LEFT JOIN REPORTS.SP_KOSGU kos 
+                ON CF.ECONOMIC_ID = kos.ID AND kos.ID_DATA_SOURCE = V_ID_DATA_SOURCE  AND kos.VERSION_DATE = V_VERSION_DATE;
 
     -- Привязка кол-ва обработанных строк
     :V_ROWCOUNT := SQL%ROWCOUNT;
