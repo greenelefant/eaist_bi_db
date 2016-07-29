@@ -2252,9 +2252,11 @@ SELECT pv.ID as Id1,
                                         ON pl.lot_id = lv.id AND pl.is_actual = 1 and lv.joint_auction=1) pl
                                on pl.PROCEDURE_ENTITY_ID = pe.ID
                     LEFT JOIN (select distinct entity_id,
-                                min(case when status_id=7 then created_date else null end) over (partition by entity_id) first_pub_date,
-                                max(case when status_id=7 then created_date else null end) over (partition by entity_id) last_pub_date
-                                FROM D_PROCEDURE_VERSION@EAIST_MOS_SHARD) dates on dates.entity_id=pe.id
+                                min(case when ver.status_id=7 then ver.created_date else null end) over (partition by ent.reg_number) first_pub_date,
+                                max(case when ver.status_id=7 then ver.created_date else null end) over (partition by ver.entity_id) last_pub_date
+                                FROM D_PROCEDURE_VERSION@EAIST_MOS_SHARD ver
+                                JOIN D_PROCEDURE_ENTITY@EAIST_MOS_SHARD ent
+                                ON ver.entity_id=ent.id) dates on dates.entity_id=pe.id
                     LEFT JOIN (select distinct procedure_entity_id from (
                               select procedure_Id procedure_entity_id, place from d_ea_winner@eaist_mos_shard
                               union
@@ -2469,16 +2471,18 @@ END;#';
 										  from (                
 										  select distinct ver.entity_id,
 														  ver.created_date,
-																  min(case when stat.status_id=5 then status_date else null end) over (partition by ver.entity_id) first_pub_date,
+																  min(case when stat.status_id=5 then status_date else null end) over (partition by ent.REGISTRY_NUMBER) first_pub_date,
 																  max(case when stat.status_id=5 and ver.id=ver.max_id then status_date else null end) over (partition by ver.entity_id) last_change_pub_date,
 																  max(case when stat.status_id=5 then status_date else null end) over (partition by ver.entity_id) last_pub_date,
-																  min(case when stat.status_id=2 then status_date else null end) over (partition by ver.entity_id) first_approve_date,
+																  min(case when stat.status_id=2 then status_date else null end) over (partition by ent.REGISTRY_NUMBER) first_approve_date,
 																  max(case when stat.status_id=2 and ver.id=ver.max_id then status_date else null end) over (partition by ver.entity_id) last_change_approve_date,
 																  max(case when stat.status_id=2 then status_date else null end) over (partition by ver.entity_id) last_approve_date,
 																  case when stat.status_id=2 then status_date else null end approved_date
 																  FROM (select v.id, v.entity_id, max(id) over (partition by entity_id) max_id, min(created_date) over (partition by entity_id) created_date  from D_LOT_VERSION@EAIST_MOS_SHARD v) ver
 																  JOIN D_LOT_STATUS_HISTORY@EAIST_MOS_SHARD stat
 																  ON ver.id=stat.version_id
+                                  JOIN D_LOT_ENTITY@EAIST_MOS_SHARD ent
+                                  ON ver.entity_Id=ent.id
 																  )) dates ON dates.entity_id=le.id
 			LEFT JOIN D_LOT_INDEX@EAIST_MOS_SHARD li ON le.ID = li.ID
 			LEFT JOIN (  SELECT MAX (PLAN_SCHEDULE_ID) PLAN_SCHEDULE_ID,
@@ -2738,8 +2742,10 @@ END;#';
                                               VERSION_NUMBER,
                                               FIRST_PUBLISH_DATE,
                                               LAST_CHANGE_PUBLISH_DATE,
+                                              LAST_PUBLISH_DATE,
                                               FIRST_APPROVE_DATE,
-                                              LAST_CHANGE_APPROVE_DATE)
+                                              LAST_CHANGE_APPROVE_DATE,
+                                              LAST_APPROVE_DATE)
             SELECT dppv.ID,
                    dppe.YEAR,
                    dppe.CUSTOMER_ID,
@@ -2756,8 +2762,10 @@ END;#';
                    dppv.version,
                    dates.first_pub_Date,
                    dates.last_change_pub_date,
+                   dates.last_pub_date,
                    dates.first_approve_date,
-                   dates.last_change_approve_date
+                   dates.last_change_approve_date,
+                   dates.last_approve_date
               FROM D_PURCHASE_PLAN_ENTITY@EAIST_MOS_SHARD dppe
                    JOIN (SELECT d.ID,
                                 d.ENTITY_ID,
@@ -2820,8 +2828,10 @@ END;#';
                                 select distinct ver.entity_id,
                                 min(case when stat.status_id=8 then status_date else null end) over (partition by ver.entity_id) first_pub_date,
                                 max(case when stat.status_id=8 and ver.id=ver.max_id then status_date else null end) over (partition by ver.entity_id) last_change_pub_date,
+                                max(case when stat.status_id=8 then status_date else null end) over (partition by ver.entity_id) last_pub_date,
                                 min(case when stat.status_id=5 then status_date else null end) over (partition by ver.entity_id) first_approve_date,
-                                max(case when stat.status_id=5 and ver.id=ver.max_id then status_date else null end) over (partition by ver.entity_id) last_change_approve_date
+                                max(case when stat.status_id=5 and ver.id=ver.max_id then status_date else null end) over (partition by ver.entity_id) last_change_approve_date,
+                                max(case when stat.status_id=5 then status_date else null end) over (partition by ver.entity_id) last_approve_date
                                 FROM (select v.id, v.entity_id, max(id) over (partition by entity_id) max_id from D_PURCHASE_PLAN_VERSION@EAIST_MOS_SHARD v) ver
                                 JOIN D_PURCHASE_PLAN_STATUS_HISTORY@EAIST_MOS_SHARD stat
                                 ON ver.id=stat.version_id
@@ -2842,7 +2852,7 @@ END;#';
     rec_array(idx).is_actual := 1;
     rec_array(idx).sql_text := start_str || q'#
         INSERT INTO T_PURCHASE_SHEDULE (ID,YEAR,CUSTOMER_ID,PERIOD,APPROVED_DATE,PUBLICATION_DATE,ID_DATA_SOURCE,VERSION_DATE,entity_id,IS_ACTUAL,ID_STATUS, 
-                                        LAST_CHANGE_DATE, VERSION_NUMBER, FIRST_PUBLISH_DATE, LAST_CHANGE_PUBLISH_DATE, FIRST_APPROVE_DATE, LAST_CHANGE_APPROVE_DATE, IS_ACTUAL_ENTITY, reg_number_oos)
+                                        LAST_CHANGE_DATE, VERSION_NUMBER, FIRST_PUBLISH_DATE, LAST_CHANGE_PUBLISH_DATE, LAST_PUBLISH_DATE, FIRST_APPROVE_DATE, LAST_CHANGE_APPROVE_DATE, LAST_APPROVE_DATE, IS_ACTUAL_ENTITY, reg_number_oos)
 
             SELECT distinct psv.ID id,
                    pse.YEAR,
@@ -2859,8 +2869,10 @@ END;#';
                    psv.version,
                    dates.first_pub_date,
                    dates.last_change_pub_date,
+                   dates.last_pub_date,
                    dates.first_approve_date,
                    dates.last_change_approve_date,
+                   dates.last_approve_date,
                    case when max(pse.version) over (partition by pse.customer_id, pse.year) = pse.version then 1 else 0 end IS_ACTUAL_ENTITY,
                    psre.oos_plan_number
               FROM    D_PLAN_SCHEDULE_ENTITY@EAIST_MOS_SHARD pse
@@ -2872,8 +2884,10 @@ END;#';
                         select distinct ver.entity_id,
                         min(case when stat.status_id=7 then status_date else null end) over (partition by pse.customer_id, pse.year) first_pub_date,
                         max(case when stat.status_id=7 and ver.id=ver.max_id then status_date else null end) over (partition by ver.entity_id) last_change_pub_date,
+                        max(case when stat.status_id=7 then status_date else null end) over (partition by ver.entity_id) last_pub_date,
                         min(case when stat.status_id=4 then status_date else null end) over (partition by pse.customer_id, pse.year) first_approve_date,
-                        max(case when stat.status_id=4 and ver.id=ver.max_id then status_date else null end) over (partition by ver.entity_id) last_change_approve_date
+                        max(case when stat.status_id=4 and ver.id=ver.max_id then status_date else null end) over (partition by ver.entity_id) last_change_approve_date,
+                        max(case when stat.status_id=4 then status_date else null end) over (partition by ver.entity_id) last_approve_date
                         FROM (select v.id, v.entity_id, max(id) over (partition by entity_id) max_id from D_PLAN_SCHEDULE_VERSION@EAIST_MOS_SHARD v) ver
                         JOIN D_PLAN_SCHEDULE_STATUS_HISTORY@EAIST_MOS_SHARD stat
                         ON ver.id=stat.version_id
@@ -2943,8 +2957,10 @@ END;#';
                                  REGISTRY_NUMBER,
                                  FIRST_PUBLISH_DATE,
                                  LAST_CHANGE_PUBLISH_DATE,
+                                 LAST_PUBLISH_DATE,
                                  FIRST_APPROVE_DATE,
-                                 LAST_CHANGE_APPROVE_DATE)
+                                 LAST_CHANGE_APPROVE_DATE,
+                                 LAST_APPROVE_DATE)
             SELECT pur_ver.ID,
                    pur_ver.ENTITY_ID,
                    pur_ent.customer_id,
@@ -2989,8 +3005,10 @@ END;#';
                    pur_ent.REGISTRY_NUMBER,
                    dates.first_pub_date,
                    dates.last_change_pub_date,
+                   dates.last_pub_date,
                    dates.first_approve_date,
-                   dates.last_change_approve_date
+                   dates.last_change_approve_date,
+                   dates.last_approve_date
               FROM    D_PURCHASE_ENTITY@EAIST_MOS_SHARD pur_ent
                    JOIN
                       (SELECT ID,
@@ -3035,16 +3053,18 @@ END;#';
                         WHERE deleted_date IS NULL) pur_ver
                    ON pur_ent.id = pur_ver.entity_id 
                    LEFT JOIN (select ENTITY_ID, CREATED_DATE from
-                             (SELECT ID,ENTITY_ID,CREATED_DATE, ROW_NUMBER() OVER (PARTITION  BY ENTITY_ID ORDER BY ID desc) rn 
+                             (SELECT ID,ENTITY_ID, CREATED_DATE, ROW_NUMBER() OVER (PARTITION  BY ENTITY_ID ORDER BY ID desc) rn 
                              FROM D_PURCHASE_VERSION@EAIST_MOS_SHARD
                              WHERE status_id=2) sign_P  where rn=1) p_app_date
                   ON p_app_date.entity_id=pur_ent.id
                     LEFT JOIN (select distinct entity_id,
                                 min(case when status_id=6 then created_date else null end) over (partition by entity_id) first_pub_date,
-                                max(case when status_id=6 then created_date else null end) over (partition by entity_id) last_change_pub_date,
+                                max(case when status_id=6 and max_id=id then created_date else null end) over (partition by entity_id) last_change_pub_date,
+                                max(case when status_id=6 then created_date else null end) over (partition by entity_id) last_pub_date,
                                 min(case when status_id=2 then created_date else null end) over (partition by entity_id) first_approve_date,
-                                max(case when status_id=2 then created_date else null end) over (partition by entity_id) last_change_approve_date
-                                FROM D_PURCHASE_VERSION@EAIST_MOS_SHARD) dates on dates.entity_id=pur_ent.id
+                                max(case when status_id=2 and max_id=id then created_date else null end) over (partition by entity_id) last_change_approve_date,
+                                max(case when status_id=2 then created_date else null end) over (partition by entity_id) last_approve_date  
+                                FROM (select v.id, v.entity_id, max(id) over (partition by entity_id) max_id, status_id, created_date  from D_PURCHASE_VERSION@EAIST_MOS_SHARD v) ver) dates on dates.entity_id=pur_ent.id
                    LEFT JOIN (SELECT ID, NAME FROM SP_PERIODICITY WHERE ID_DATA_SOURCE=V_ID_DATA_SOURCE AND VERSION_DATE=V_VERSION_DATE) per
                    ON pur_ver.PERIODICITY_ID=per.ID;
 
@@ -3152,8 +3172,10 @@ END;#';
                                           SMP_QUOTA,
                                           FIRST_PUBLISH_DATE,
                                           LAST_CHANGE_PUBLISH_DATE,
+                                          LAST_PUBLISH_DATE,
                                           FIRST_APPROVE_DATE,
-                                          LAST_CHANGE_APPROVE_DATE)
+                                          LAST_CHANGE_APPROVE_DATE,
+                                          LAST_APPROVE_DATE)
             SELECT dpv.ID,
                    pde.PURCHASE_ID,
                    dpv.EXTENDED_CODE,
@@ -3195,8 +3217,10 @@ END;#';
                    nvl(lpe.smp_QUOTA,0) SMP_QUOTA,
                    dates.first_pub_date,
                    dates.last_change_pub_date,
+                   dates.last_pub_date,
                    dates.first_approve_date,
-                   dates.last_change_approve_date
+                   dates.last_change_approve_date,
+                   dates.last_approve_date
               FROM D_DETAILED_PURCHASE_ENTITY@EAIST_MOS_SHARD dpe
                    JOIN (SELECT ID,
                                 ENTITY_ID,
@@ -3245,8 +3269,10 @@ END;#';
                                   select distinct ver.entity_id,
                                   min(case when stat.status_id=6 then status_date else null end) over (partition by ver.entity_id) first_pub_date,
                                   max(case when stat.status_id=6 and ver.id=ver.max_id then status_date else null end) over (partition by ver.entity_id) last_change_pub_date,
+                                  max(case when stat.status_id=6 then status_date else null end) over (partition by ver.entity_id) last_pub_date,
                                   min(case when stat.status_id=2 then status_date else null end) over (partition by ver.entity_id) first_approve_date,
-                                  max(case when stat.status_id=2 and ver.id=ver.max_id then status_date else null end) over (partition by ver.entity_id) last_change_approve_date
+                                  max(case when stat.status_id=2 and ver.id=ver.max_id then status_date else null end) over (partition by ver.entity_id) last_change_approve_date,
+                                  max(case when stat.status_id=2 then status_date else null end) over (partition by ver.entity_id) last_approve_date
                                   FROM (select v.id, v.entity_id, max(id) over (partition by entity_id) max_id from D_DETAILED_PURCHASE_VERSION@EAIST_MOS_SHARD v) ver
                                   JOIN D_DPURCHASE_STATUS_HISTORY@EAIST_MOS_SHARD stat
                                   ON ver.id=stat.version_id
