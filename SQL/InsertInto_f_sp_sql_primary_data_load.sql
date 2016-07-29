@@ -7918,6 +7918,23 @@ END;#';
 
 END;#';
 
+-- MV_LOT_BIDS [EAIST2]
+    idx := idx + 1;
+    rec_array(idx).table_name := 'MV_LOT_BIDS';
+    rec_array(idx).sql_name := 'MV_LOT_BIDS [EAIST2]';
+    rec_array(idx).description := 'Подсчет заявок для лотов, для сервиса';
+    rec_array(idx).execute_order := idx * 100;
+    rec_array(idx).id_data_source := 2;
+    rec_array(idx).is_actual := 1;
+    rec_array(idx).sql_text := start_str || q'#
+    DBMS_MVIEW.REFRESH('mv_lot_bids');
+
+    -- Привязка кол-ва обработанных строк
+    :V_ROWCOUNT := SQL%ROWCOUNT;
+
+END;#';
+
+
     -- Вставка запросов
     for i in 1..rec_array.count loop
         insert into f_sp_sql_primary_data_load (
