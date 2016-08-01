@@ -223,21 +223,27 @@ END;#';
                                               FORMATTED_NAME,
                                               OPEN_DATE_D,
                                               CLOSE_DATE_D,
-                                              status)
-                SELECT ID,
-                       PARENT_ORGANIZATION,
-                       FULL_NAME,
-                       SHORT_NAME,
-                       SPZ_CODE,
-                       INN,
-                       IS_SMP,
-                       IS_CUSTOMER,
-                       IS_SUPPLIER,
+                                              status,
+                                              parent_grbs,
+                                              address,
+                                              okopf,
+                                              ogrn,
+                                              phone,
+                                              email)
+                SELECT p.ID,
+                       p.PARENT_ORGANIZATION,
+                       p.FULL_NAME,
+                       p.SHORT_NAME,
+                       p.SPZ_CODE,
+                       p.INN,
+                       p.IS_SMP,
+                       p.IS_CUSTOMER,
+                       p.IS_SUPPLIER,
                        V_ID_DATA_SOURCE,
                        V_VERSION_DATE,
-                       ENTITY_ID,
-                       KPP,
-                       WEB,
+                       p.ENTITY_ID,
+                       p.KPP,
+                       p.WEB,
                        CASE
                           WHEN UNK IS NOT NULL THEN 2
                           WHEN UNK IS NULL AND IS_FL = 0 THEN 2
@@ -280,13 +286,20 @@ END;#';
                              TO_DATE (ext_closed, 'yyyy-mm-dd hh24:mi:ss')
                        END
                           CLOSE_DATE_D,
-                       status
-                  FROM N_PARTICIPANT@EAIST_MOS_NSI
+                       p.status,
+                       parent_grbs,
+                       address,
+                       okopf.code,
+                       ogrn,
+                       phone,
+                       email
+                  FROM N_PARTICIPANT@EAIST_MOS_NSI p
+                  left join n_okopf@eaist_mos_nsi okopf on p.okopf=okopf.id
             --where (PARENT_ORGANIZATION in (select ID from N_PARTICIPANT) or PARENT_ORGANIZATION is null)
-            CONNECT BY     PRIOR id = parent_organization
-                       AND DELETED_DATE IS NULL
+            CONNECT BY     PRIOR p.id = p.parent_organization
+                       AND p.DELETED_DATE IS NULL
             START WITH     parent_organization IS NULL
-                       AND DELETED_DATE IS NULL;
+                       AND p.DELETED_DATE IS NULL;
 
     -- Привязка кол-ва обработанных строк
     :V_ROWCOUNT := SQL%ROWCOUNT;
@@ -7928,6 +7941,43 @@ END;#';
     rec_array(idx).is_actual := 1;
     rec_array(idx).sql_text := start_str || q'#
     DBMS_MVIEW.REFRESH('mv_lot_bids');
+
+    -- Привязка кол-ва обработанных строк
+    :V_ROWCOUNT := SQL%ROWCOUNT;
+
+END;#';
+
+-- SP_TRADING_PLATFORM [EAIST2]
+    idx := idx + 1;
+    rec_array(idx).table_name := 'SP_TRADING_PLATFORM';
+    rec_array(idx).sql_name := 'SP_TRADING_PLATFORM [EAIST2]';
+    rec_array(idx).description := 'Торговые площадки';
+    rec_array(idx).execute_order := idx * 100;
+    rec_array(idx).id_data_source := 2;
+    rec_array(idx).is_actual := 1;
+    rec_array(idx).sql_text := start_str || q'#
+    INSERT INTO SP_TRADING_PLATFORM (
+		NUM,
+		NAME,
+		OPERATOR,
+		ADDRESS,
+		TYPE,
+		ACTIVE,
+		VERSION_DATE,
+		ID_DATA_SOURCE,
+		ID)
+	select 
+	'' as Номер,
+	t.name as Наименование,
+	'' as Оператор,
+	t.trade_place as Адрес,
+	'' as Принадлежность,
+	'Да' as Действующая,
+	V_VERSION_DATE,
+	V_ID_DATA_SOURCE,
+	id
+	from N_TRADING_PLATFORM@eaist_mos_nsi t
+	where deleted_date is null and type <> 1;
 
     -- Привязка кол-ва обработанных строк
     :V_ROWCOUNT := SQL%ROWCOUNT;
