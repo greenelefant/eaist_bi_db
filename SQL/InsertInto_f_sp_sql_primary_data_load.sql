@@ -2254,7 +2254,7 @@ SELECT pv.ID as Id1,
                     LEFT JOIN (select distinct entity_id,
                                 min(case when ver.status_id=7 then ver.created_date else null end) over (partition by ent.reg_number) first_pub_date,
                                 max(case when ver.status_id=7 then ver.created_date else null end) over (partition by ver.entity_id) last_pub_date
-                                FROM D_PROCEDURE_VERSION@EAIST_MOS_SHARD ver
+                                FROM (select entity_id, status_id, createD_date from D_PROCEDURE_VERSION@EAIST_MOS_SHARD) ver
                                 JOIN D_PROCEDURE_ENTITY@EAIST_MOS_SHARD ent
                                 ON ver.entity_id=ent.id) dates on dates.entity_id=pe.id
                     LEFT JOIN (select distinct procedure_entity_id from (
