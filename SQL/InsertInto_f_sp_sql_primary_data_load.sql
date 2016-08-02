@@ -289,12 +289,11 @@ END;#';
                        p.status,
                        parent_grbs,
                        address,
-                       --okopf.code,
+                       okopf,
                        ogrn,
                        phone,
                        email
                   FROM N_PARTICIPANT@EAIST_MOS_NSI p
-                  --left join n_okopf@eaist_mos_nsi okopf on p.okopf=okopf.id
             --where (PARENT_ORGANIZATION in (select ID from N_PARTICIPANT) or PARENT_ORGANIZATION is null)
             CONNECT BY     PRIOR p.id = p.parent_organization
                        AND p.DELETED_DATE IS NULL
@@ -4138,7 +4137,7 @@ END;#';
     rec_array(idx).is_actual := 1;
     rec_array(idx).sql_text := start_str || q'#
         insert into T_CONTRACT_SPEC
-          (ID, CONTRACT_ID, QUANTITY, UNIT_COST, COST_IN_RUBLE, VERSION_DATE, ID_DATA_SOURCE, OKPD_ID, KPGZ_ID)
+          (ID, CONTRACT_ID, QUANTITY, UNIT_COST, COST_IN_RUBLE, VERSION_DATE, ID_DATA_SOURCE, OKPD_ID, KPGZ_ID, OKEI_ID)
         select        
           sp.ID as ID
           ,sp.CONTRACT_ID as CONTRACT_ID
@@ -4148,7 +4147,8 @@ END;#';
           ,V_VERSION_DATE as version_date
           ,V_ID_DATA_SOURCE as ID_DATA_SOURCE
           ,okpd_id
-	  ,kpgz_id
+          ,kpgz_id
+          ,okei_id
         from contract_specification@eaist_mos_rc sp;
 
     -- Привязка кол-ва обработанных строк
@@ -7978,6 +7978,23 @@ END;#';
 	id
 	from N_TRADING_PLATFORM@eaist_mos_nsi t
 	where deleted_date is null and type <> 1;
+
+    -- Привязка кол-ва обработанных строк
+    :V_ROWCOUNT := SQL%ROWCOUNT;
+
+END;#';
+
+-- SP_OKOPF [EAIST2]
+    idx := idx + 1;
+    rec_array(idx).table_name := 'SP_OKOPF';
+    rec_array(idx).sql_name := 'SP_OKOPF [EAIST2]';
+    rec_array(idx).description := 'SP_OKOPF';
+    rec_array(idx).execute_order := idx * 100;
+    rec_array(idx).id_data_source := 2;
+    rec_array(idx).is_actual := 1;
+    rec_array(idx).sql_text := start_str || q'#
+    insert into SP_OKPF (id, code, name, id_data_source, version_date)
+	select id, code, name, v_id_Data_source, V_version_date from n_okopf@eaist_mos_nsi where deleted_date is null;
 
     -- Привязка кол-ва обработанных строк
     :V_ROWCOUNT := SQL%ROWCOUNT;
