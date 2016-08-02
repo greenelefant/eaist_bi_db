@@ -226,7 +226,7 @@ END;#';
                                               status,
                                               parent_grbs,
                                               address,
-                                              okopf,
+                                              --okopf,
                                               ogrn,
                                               phone,
                                               email)
@@ -289,12 +289,12 @@ END;#';
                        p.status,
                        parent_grbs,
                        address,
-                       okopf.code,
+                       --okopf.code,
                        ogrn,
                        phone,
                        email
                   FROM N_PARTICIPANT@EAIST_MOS_NSI p
-                  left join n_okopf@eaist_mos_nsi okopf on p.okopf=okopf.id
+                  --left join n_okopf@eaist_mos_nsi okopf on p.okopf=okopf.id
             --where (PARENT_ORGANIZATION in (select ID from N_PARTICIPANT) or PARENT_ORGANIZATION is null)
             CONNECT BY     PRIOR p.id = p.parent_organization
                        AND p.DELETED_DATE IS NULL
