@@ -6564,6 +6564,39 @@ END;#';
 
 END;#';
 
+    -- T_CONTRACT_SPEC [EAIST1]
+    idx := idx + 1;
+    rec_array(idx).table_name := 'T_CONTRACT_SPEC';
+    rec_array(idx).sql_name := 'T_CONTRACT_SPEC [EAIST1]';
+    rec_array(idx).description := 'Спецификации по контрактам';
+    rec_array(idx).execute_order := idx * 100;
+    rec_array(idx).id_data_source := 1;
+    rec_array(idx).is_actual := 1;
+    rec_array(idx).sql_text := start_str || q'#
+    insert into t_contract_spec 
+		(id, 
+		version_date, 
+		contract_id, 
+		quantity, 
+		cost_in_ruble, 
+		okpd_id, 
+		id_data_source)
+	select 
+		id, 
+		V_VERSION_DATE, 
+		contract_id, 
+		quantity, 
+		sum_in_currency_nds, 
+		okpd_id, 
+		V_ID_DATA_SOURCE 
+	from specification@tkdbn1 
+	where id<>519953;            
+
+    -- Привязка кол-ва обработанных строк
+    :V_ROWCOUNT := SQL%ROWCOUNT;
+
+END;#';
+
     -- LNK_CONTRACT_LOT [EAIST1]
     idx := idx + 1;
     rec_array(idx).table_name := 'LNK_CONTRACT_LOT';
