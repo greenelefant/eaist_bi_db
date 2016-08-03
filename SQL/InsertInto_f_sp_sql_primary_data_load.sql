@@ -7172,7 +7172,7 @@ END;#';
     rec_array(idx).id_data_source := 4;
     rec_array(idx).is_actual := 1;
     rec_array(idx).sql_text := start_str || q'#
-        insert into REPORTS.SP_ORGANIZATION(ID,ID_PARENT,INN,KPP,ORGANIZATION_TYPE,FULL_NAME,SHORT_NAME,ID_DATA_SOURCE,VERSION_DATE,IS_CUSTOMER,IS_SUPPLIER,ENTITY_ID,FORMATTED_NAME, CONNECT_LEVEL) 
+        insert into REPORTS.SP_ORGANIZATION(ID,ID_PARENT,INN,KPP,ORGANIZATION_TYPE,FULL_NAME,SHORT_NAME,ID_DATA_SOURCE,VERSION_DATE,IS_CUSTOMER,IS_SUPPLIER,ENTITY_ID,FORMATTED_NAME, address, ogrn, phone,email, CONNECT_LEVEL ) 
             select o.*,level from (
                             SELECT curr.ID,
                               curr.PARENT_ID,
@@ -7186,12 +7186,16 @@ END;#';
                               case when company_type=3 then 1 else 0 end as IS_CUSTOMER,
                               case when company_type in (1,2) then 1 else 0 end as IS_SUPPLIER,
                               curr.entity_id,
-                              FORMATE_NAME(FULL_NAME) as FORMATTED_NAME
+                              FORMATE_NAME(FULL_NAME) as FORMATTED_NAME,
+                              a.full_address,
+                              curr.ogrn,
+                              curr.phone,
+                              curr.email
                              FROM enterprise@tkdbn1 curr,
                                   (  SELECT entity_id, MAX (t.date_start) max_date, COUNT (*) cnt
                                        FROM enterprise@tkdbn1 t
-                                   GROUP BY entity_id) mv
-                              WHERE curr.entity_id = mv.entity_id AND curr.date_start = mv.max_date) o
+                                   GROUP BY entity_id) mv, address@tkdbn1 a
+                              WHERE curr.entity_id = mv.entity_id AND curr.date_start = mv.max_date and curr.address_fact_id=a.id) o
           connect by prior o.entity_id=o.parent_id
           start with o.parent_id is null;
 
