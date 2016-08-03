@@ -8021,6 +8021,42 @@ END;#';
 
 END;#';
 
+-- SP_TRADING_PLATFORM [EAIST1]
+    idx := idx + 1;
+    rec_array(idx).table_name := 'SP_TRADING_PLATFORM';
+    rec_array(idx).sql_name := 'SP_TRADING_PLATFORM [EAIST1]';
+    rec_array(idx).description := 'Торговые площадки';
+    rec_array(idx).execute_order := idx * 100;
+    rec_array(idx).id_data_source := 2;
+    rec_array(idx).is_actual := 1;
+    rec_array(idx).sql_text := start_str || q'#
+    INSERT INTO SP_TRADING_PLATFORM (
+		NUM,
+		NAME,
+		OPERATOR,
+		ADDRESS,
+		TYPE,
+		ACTIVE,
+		VERSION_DATE,
+		ID_DATA_SOURCE,
+		ID)
+	select 
+	NUM,
+	NAME,
+	OPERATOR,
+	ADDRESS,
+	TYPE,
+	ACTIVE,
+	V_VERSION_DATE,
+	V_ID_DATA_SOURCE,
+	id
+	from SP_TRADING_PLATFORM where version_date=V_VERSION_DATE-1 and ID_DATA_SOURCE=V_ID_DATA_SOURCE;
+
+    -- Привязка кол-ва обработанных строк
+    :V_ROWCOUNT := SQL%ROWCOUNT;
+
+END;#';
+
 -- SP_OKOPF [EAIST2]
     idx := idx + 1;
     rec_array(idx).table_name := 'SP_OKOPF';
