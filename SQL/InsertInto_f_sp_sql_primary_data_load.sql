@@ -8074,6 +8074,614 @@ END;#';
 
 END;#';
 
+-- SP_CUSTOMER [EAIST2]
+    idx := idx + 1;
+    rec_array(idx).table_name := 'SP_CUSTOMER';
+    rec_array(idx).sql_name := 'SP_CUSTOMER - UPD [LOAD_ORG_JOINT_1156]';
+    rec_array(idx).description := 'Связка заказчиков е1 с е2 руками через LNK_CUSTOMERS_E1_E2_IMP';
+    rec_array(idx).execute_order := idx * 100;
+    rec_array(idx).id_data_source := 1;
+    rec_array(idx).is_actual := 1;
+    rec_array(idx).sql_text := start_str || q'#
+		for c in (select * from lnk_customers_e1_e2_imp) 
+				loop
+					update sp_customer set inn=c.e2_inn, kpp=c.e2_kpp where inn=c.e1_inn and kpp=c.e1_kpp and id_data_source=V_ID_DATA_SOURCE and version_date=V_VERSION_DATE;  --42 cust 43 rows
+				end loop;   
+
+		-- Привязка кол-ва обработанных строк
+		:V_ROWCOUNT := sql%rowcount;
+
+END;#';
+
+-- SP_CUSTOMER [EAIST2]
+    idx := idx + 1;
+    rec_array(idx).table_name := 'SP_CUSTOMER';
+    rec_array(idx).sql_name := 'SP_CUSTOMER-1 [CLEAN_1156]';
+    rec_array(idx).description := 'Чистка справочника заказчиков';
+    rec_array(idx).execute_order := idx * 100;
+    rec_array(idx).id_data_source := 2;
+    rec_array(idx).is_actual := 1;
+    rec_array(idx).sql_text := start_str || q'#
+	--6 Из справочника удаляются все элементы
+	--которые не являются узлами (не содержат лежащих внутри них элементов) и по которым отсутствуют данные в таблицах: ОЗ, ДОЗ, лот, тендер, контракт,лимиты;    
+
+	   delete from sp_customer c where version_date=V_VERSION_DATE and id_data_source=V_ID_DATA_SOURCE
+		and not exists(select * from sp_customer o where o.version_date=c.version_date and o.id_data_source=c.id_data_source and o.id_parent=c.id)
+		and not exists(select * from T_CONTRACT con where con.version_date=c.version_date and con.id_data_source=c.id_data_source and con.ID_CUSTOMER=c.id)
+		and not exists(select * from T_FINANCIAL_LIMIT fl where fl.version_date=c.version_date and fl.id_data_source=c.id_data_source and c.id=fl.CUSTOMER_ID)
+		and not exists(select * from T_GKU_PURCHASE_PLAN gpp where gpp.version_date=c.version_date and gpp.id_data_source=c.id_data_source and c.id=gpp.CUSTOMER_ID)
+		and not exists(select * from T_GKU_PURCHASE_SCHEDULE gps where gps.version_date=c.version_date and gps.id_data_source=c.id_data_source and c.id=gps.CUSTOMER_ID)
+		and not exists(select * from T_LOT l where l.version_date=c.version_date and l.id_data_source=c.id_data_source and c.id=l.CUSTOMER_ID)
+		and not exists(select * from T_LOT_SPECIFICATION ls where ls.version_date=c.version_date and ls.id_data_source=c.id_data_source and c.id=ls.ID_CUSTOMER)
+		and not exists(select * from T_PURCHASE p where p.version_date=c.version_date and p.id_data_source=c.id_data_source and c.id=p.CUSTOMER_ID)
+		and not exists(select * from T_PURCHASE_DETAILED pd where pd.version_date=c.version_date and pd.id_data_source=c.id_data_source and c.id=pd.ID_CUSTOMER)
+		and not exists(select * from T_PURCHASE_LIMIT pl where pl.version_date=c.version_date and pl.id_data_source=c.id_data_source and c.id=pl.CUSTOMER_ID)
+		and not exists(select * from T_PURCHASE_PLAN pp where pp.version_date=c.version_date and pp.id_data_source=c.id_data_source and c.id=pp.CUSTOMER_ID)
+		and not exists(select * from T_PURCHASE_SHEDULE ps where ps.version_date=c.version_date and ps.id_data_source=c.id_data_source and c.id=ps.CUSTOMER_ID)
+		and not exists(select * from T_TENDER t where t.version_date=c.version_date and t.id_data_source=c.id_data_source and c.id=t.ID_CUSTOMER_EAIST2); 
+
+		-- Привязка кол-ва обработанных строк
+		:V_ROWCOUNT := sql%rowcount;
+
+END;#';
+
+-- SP_CUSTOMER [EAIST1]
+    idx := idx + 1;
+    rec_array(idx).table_name := 'SP_CUSTOMER';
+    rec_array(idx).sql_name := 'SP_CUSTOMER-2 [CLEAN_1156]';
+    rec_array(idx).description := 'Чистка справочника заказчиков';
+    rec_array(idx).execute_order := idx * 100;
+    rec_array(idx).id_data_source := 1;
+    rec_array(idx).is_actual := 1;
+    rec_array(idx).sql_text := start_str || q'#
+	--6 Из справочника удаляются все элементы
+	--которые не являются узлами (не содержат лежащих внутри них элементов) и по которым отсутствуют данные в таблицах: ОЗ, ДОЗ, лот, тендер, контракт,лимиты;   
+	 
+		delete from sp_customer c where version_date=V_VERSION_DATE and id_data_source=V_ID_DATA_SOURCE
+			and not exists(select * from sp_customer o where o.version_date=c.version_date and o.id_data_source=c.id_data_source and o.id_parent=c.id)--нет подведов
+			and not exists(select * from T_CONTRACT con where con.version_date=c.version_date and con.id_data_source=c.id_data_source and c.id=con.ID_CUSTOMER)
+			and not exists(select * from T_LOT l where l.version_date=c.version_date and l.id_data_source=c.id_data_source and c.id=l.CUSTOMER_ID)
+			and not exists(select * from T_LOT_SPECIFICATION ls where ls.version_date=c.version_date and ls.id_data_source=c.id_data_source and c.id=ls.ID_CUSTOMER)
+			and not exists(select * from T_PPZ_LOT ppz where ppz.version_date=c.version_date and ppz.id_data_source=c.id_data_source and c.id=ppz.GENERAL_GOV_CUSTOMER_ENTITY_ID)
+			and not exists(select * from T_TENDER t where t.version_date=c.version_date and t.id_data_source=c.id_data_source and c.id=t.ID_CUSTOMER_EAIST2);
+
+		-- Привязка кол-ва обработанных строк
+		:V_ROWCOUNT := sql%rowcount;
+
+END;#';
+
+-- SP_CUSTOMER [EAIST1]
+    idx := idx + 1;
+    rec_array(idx).table_name := 'SP_CUSTOMER';
+    rec_array(idx).sql_name := 'SP_CUSTOMER-3 [CLEAN_1156]';
+    rec_array(idx).description := 'Чистка справочника заказчиков';
+    rec_array(idx).execute_order := idx * 100;
+    rec_array(idx).id_data_source := 1;
+    rec_array(idx).is_actual := 1;
+    rec_array(idx).sql_text := start_str || q'#
+       --у которых установлен статус "В архиве" (sp_customer.sp_status=4) и по которым отсутствуют ГК с финансированием на 2014 год и далее (>=2014)
+
+        delete from sp_customer c where version_date=V_VERSION_DATE
+        and status=4 
+        and not exists(select * from sp_customer o where o.version_date=c.version_date and o.id_data_source=c.id_data_source and o.id_parent=c.id)
+        and not exists(select * from T_CONTRACT con
+                       join t_finansing_contracts fc on fc.version_date=CON.VERSION_DATE and con.id_data_source=fc.id_data_source and con.id=fc.id_contract
+                       where con.version_date=c.version_date and con.id_data_source=c.id_data_source and c.id=ID_CUSTOMER and fc.budget_year>=2014);
+
+		-- Привязка кол-ва обработанных строк
+		:V_ROWCOUNT := sql%rowcount;
+
+END;#';
+
+-- SP_ORGANIZATION_JOINT
+    idx := idx + 1;
+    rec_array(idx).table_name := 'SP_ORGANIZATION_JOINT';
+    rec_array(idx).sql_name := 'SP_ORGANIZATION_JOINT [RELOAD_1156]';
+    rec_array(idx).description := 'Перезагрузка сводного справочника заказчиков и поставщиков';
+    rec_array(idx).execute_order := idx * 100;
+    rec_array(idx).id_data_source := 1;
+	rec_array(idx).id_data_source_aux := 2;
+    rec_array(idx).is_actual := 1;
+    rec_array(idx).sql_text := start_str || q'#
+	delete from SP_ORGANIZATION_JOINT where V_VERSION_DATE = VERSION_DATE;
+    commit;
+
+         INSERT INTO SP_ORGANIZATION_JOINT
+            select 
+                o1.id ID_EAIST1,
+                O1.ID_PARENT id_parent_eaist1,
+                o1.formatted_name formatted_name_eaist1,
+                O1.CONNECT_LEVEL connect_level_eaist1,
+                o1.grbs_code grbs_code_eaist1,
+                get_grbs (o1.id, 1)
+                  "ОИВ, с которым связан, еаист1",
+                CASE WHEN o1.id IS NULL THEN 0 ELSE 1 END IS_EAIST1,
+                o2.id ID_EAIST2,
+                O2.ID_PARENT id_parent_eaist2,
+                o2.formatted_name formatted_name_eaist2,
+                O2.CONNECT_LEVEL connect_level_eaist2,
+                o2.grbs_code grbs_code_eaist2,
+                get_grbs (o2.id, 2)
+                  "ОИВ, с которым связан, еаист2",
+                CASE WHEN o2.id IS NULL THEN 0 ELSE 1 END IS_EAIST2,
+                NVL (o2.inn, o1.inn) INN,
+                NVL (o2.kpp, o1.kpp) KPP,
+                o2.OPEN_DATE_D OPEN_DATE,
+                o2.CLOSE_DATE_D CLOSE_DATE,
+                1 is_customer,
+                0 is_supplier,
+                V_VERSION_DATE VERSION_DATE 
+            from
+            (select * from lnk_grbs_code_customer where eaist=1) sp1
+            join (select * from lnk_grbs_code_customer where eaist=2) sp2
+            on sp1.grbs_code=sp2.grbs_code
+            join (SELECT * FROM sp_customer WHERE id_data_source = V_ID_DATA_SOURCE AND version_date = V_VERSION_DATE) o1
+            on o1.id=sp1.id_customer
+            join (SELECT * FROM sp_customer WHERE id_data_source = V_ID_DATA_SOURCE_AUX AND version_date = V_VERSION_DATE and status NOT IN (3)) o2
+            on o2.id=sp2.id_customer
+            union all
+            SELECT o1.id ID_EAIST1,
+                   O1.ID_PARENT id_parent_eaist1,
+                   o1.formatted_name formatted_name_eaist1,
+                   O1.CONNECT_LEVEL connect_level_eaist1,
+                   o1.grbs_code grbs_code_eaist1,
+                   get_grbs (o1.id, 1)
+                      "ОИВ, с которым связан, еаист1",
+                   CASE WHEN o1.id IS NULL THEN 0 ELSE 1 END IS_EAIST1,
+                   o2.id ID_EAIST2,
+                   O2.ID_PARENT id_parent_eaist2,
+                   o2.formatted_name formatted_name_eaist2,
+                   O2.CONNECT_LEVEL connect_level_eaist2,
+                   o2.grbs_code grbs_code_eaist2,
+                   get_grbs (o2.id, 2)
+                      "ОИВ, с которым связан, еаист2",
+                   CASE WHEN o2.id IS NULL THEN 0 ELSE 1 END IS_EAIST2,
+                   NVL (o1.inn, o2.inn) INN,
+                   NVL (o1.kpp, o2.kpp) KPP,
+                   o2.OPEN_DATE_D OPEN_DATE,
+                   o2.CLOSE_DATE_D CLOSE_DATE,
+                   1 is_customer,
+                   0 is_supplier,
+                   V_VERSION_DATE VERSION_DATE
+              FROM    (SELECT *
+                         FROM sp_customer
+                        WHERE id_data_source = V_ID_DATA_SOURCE
+                              AND version_date = V_VERSION_DATE) o1
+                   JOIN
+                      (SELECT *
+                         FROM sp_customer
+                        WHERE id_data_source = V_ID_DATA_SOURCE_AUX
+                              AND version_date = V_VERSION_DATE
+                              AND status NOT IN (3)) o2
+                   ON o1.inn = o2.inn AND o1.kpp = o2.kpp
+                   
+                   LEFT JOIN (select sp1.id_customer id_customer1, sp2.id_customer id_customer2 from
+                        (select * from lnk_grbs_code_customer where eaist=1) sp1
+                        join (select * from lnk_grbs_code_customer where eaist=2) sp2
+                        on sp1.grbs_code=sp2.grbs_code
+                        join (SELECT * FROM sp_customer WHERE id_data_source = V_ID_DATA_SOURCE_AUX AND version_date = V_VERSION_DATE and status NOT IN (3)) o2
+                        on o2.id=sp2.id_customer) grbs_lnk1
+                   ON o1.id=grbs_lnk1.id_customer1
+                   
+                   LEFT JOIN (select sp1.id_customer id_customer1, sp2.id_customer id_customer2 from
+                        (select * from lnk_grbs_code_customer where eaist=1) sp1
+                        join (select * from lnk_grbs_code_customer where eaist=2) sp2
+                        on sp1.grbs_code=sp2.grbs_code
+                        join (SELECT * FROM sp_customer WHERE id_data_source = V_ID_DATA_SOURCE AND version_date = V_VERSION_DATE) o1
+                        on o1.id=sp1.id_customer) grbs_lnk2
+                   ON o2.id=grbs_lnk2.id_customer2
+              WHERE grbs_lnk1.id_customer1 is null and grbs_lnk2.id_customer2 is null
+            UNION ALL
+            SELECT o1.id ID_EAIST1,
+                   O1.ID_PARENT id_parent_eaist1,
+                   o1.formatted_name formatted_name_eaist1,
+                   O1.CONNECT_LEVEL connect_level_eaist1,
+                   o1.grbs_code grbs_code_eaist1,
+                   get_grbs (o1.id, 1)
+                      "ОИВ, с которым связан, еаист1",
+                   CASE WHEN o1.id IS NULL THEN 0 ELSE 1 END IS_EAIST1,
+                   o2.id ID_EAIST2,
+                   O2.ID_PARENT id_parent_eaist2,
+                   o2.formatted_name formatted_name_eaist2,
+                   O2.CONNECT_LEVEL connect_level_eaist2,
+                   o2.grbs_code grbs_code_eaist2,
+                   get_grbs (o2.id, 2)
+                      "ОИВ, с которым связан, еаист2",
+                   CASE WHEN o2.id IS NULL THEN 0 ELSE 1 END IS_EAIST2,
+                   NVL (o1.inn, o2.inn) INN,
+                   NVL (o1.kpp, o2.kpp) KPP,
+                   o2.OPEN_DATE_D OPEN_DATE,
+                   o2.CLOSE_DATE_D CLOSE_DATE,
+                   1 is_customer,
+                   0 is_supplier,
+                   V_VERSION_DATE VERSION_DATE
+              FROM    (SELECT *
+                         FROM sp_customer
+                        WHERE id_data_source = V_ID_DATA_SOURCE
+                              AND version_date = V_VERSION_DATE) o1
+                   LEFT JOIN
+                      (SELECT *
+                         FROM sp_customer
+                        WHERE id_data_source = V_ID_DATA_SOURCE_AUX
+                              AND version_date = V_VERSION_DATE
+                              AND status NOT IN (3)) o2
+                   ON o1.inn = o2.inn AND o1.kpp = o2.kpp
+                   LEFT JOIN (select sp1.id_customer id_customer1, sp2.id_customer id_customer2 from
+                        (select * from lnk_grbs_code_customer where eaist=1) sp1
+                        join (select * from lnk_grbs_code_customer where eaist=2) sp2
+                        on sp1.grbs_code=sp2.grbs_code
+                        join (SELECT * FROM sp_customer WHERE id_data_source = V_ID_DATA_SOURCE_AUX AND version_date = V_VERSION_DATE and status NOT IN (3)) o2
+                        on o2.id=sp2.id_customer) grbs_lnk
+                   ON o1.id=grbs_lnk.id_customer1
+             WHERE O2.ID IS NULL and grbs_lnk.id_customer1 is null
+            UNION ALL
+            SELECT o1.id ID_EAIST1,
+                   O1.ID_PARENT id_parent_eaist1,
+                   o1.formatted_name formatted_name_eaist1,
+                   O1.CONNECT_LEVEL connect_level_eaist1,
+                   o1.grbs_code grbs_code_eaist1,
+                   get_grbs (o1.id, 1)
+                      "ОИВ, с которым связан, еаист1",
+                   CASE WHEN o1.id IS NULL THEN 0 ELSE 1 END IS_EAIST1,
+                   o2.id ID_EAIST2,
+                   O2.ID_PARENT id_parent_eaist2,
+                   o2.formatted_name formatted_name_eaist2,
+                   O2.CONNECT_LEVEL connect_level_eaist2,
+                   o2.grbs_code grbs_code_eaist2,
+                   get_grbs (o2.id, 2)
+                      "ОИВ, с которым связан, еаист2",
+                   CASE WHEN o2.id IS NULL THEN 0 ELSE 1 END IS_EAIST2,
+                   NVL (o1.inn, o2.inn) INN,
+                   NVL (o1.kpp, o2.kpp) KPP,
+                   o2.OPEN_DATE_D OPEN_DATE,
+                   o2.CLOSE_DATE_D CLOSE_DATE,
+                   1 is_customer,
+                   0 is_supplier,
+                   V_VERSION_DATE VERSION_DATE
+              FROM    (SELECT *
+                         FROM sp_customer
+                        WHERE id_data_source = V_ID_DATA_SOURCE
+                              AND version_date = V_VERSION_DATE) o1
+                   RIGHT JOIN
+                      (SELECT *
+                         FROM sp_customer
+                        WHERE id_data_source = V_ID_DATA_SOURCE_AUX
+                              AND version_date = V_VERSION_DATE
+                              AND status NOT IN (3)) o2
+                   ON o1.inn = o2.inn AND o1.kpp = o2.kpp
+                   LEFT JOIN (select sp1.id_customer id_customer1, sp2.id_customer id_customer2 from
+                        (select * from lnk_grbs_code_customer where eaist=1) sp1
+                        join (select * from lnk_grbs_code_customer where eaist=2) sp2
+                        on sp1.grbs_code=sp2.grbs_code
+                        join (SELECT * FROM sp_customer WHERE id_data_source = V_ID_DATA_SOURCE AND version_date = V_VERSION_DATE) o1
+                        on o1.id=sp1.id_customer) grbs_lnk
+                   ON o2.id=grbs_lnk.id_customer2
+             WHERE O1.ID IS NULL and grbs_lnk.id_customer2 is null
+            UNION ALL
+            SELECT o1.id ID_EAIST1,
+                   O1.ID_PARENT id_parent_eaist1,
+                   o1.formatted_name formatted_name_eaist1,
+                   O1.CONNECT_LEVEL connect_level_eaist1,
+                   NULL,
+                   NULL,
+                   CASE WHEN o1.id IS NULL THEN 0 ELSE 1 END IS_EAIST1,
+                   o2.id ID_EAIST2,
+                   O2.ID_PARENT id_parent_eaist2,
+                   o2.formatted_name formatted_name_eaist2,
+                   O2.CONNECT_LEVEL connect_level_eaist2,
+                   NULL,
+                   NULL,
+                   CASE WHEN o2.id IS NULL THEN 0 ELSE 1 END IS_EAIST2,
+                   NVL (o1.inn, o2.inn) INN,
+                   NVL (o1.kpp, o2.kpp) KPP,
+                   o2.OPEN_DATE_D OPEN_DATE,
+                   o2.CLOSE_DATE_D CLOSE_DATE,
+                   0 is_customer,
+                   1 is_supplier,
+                   V_VERSION_DATE VERSION_DATE
+              FROM    (SELECT *
+                         FROM sp_organization
+                        WHERE     id_data_source = V_ID_DATA_SOURCE
+                              AND version_date = V_VERSION_DATE
+                              AND is_supplier = 1) o1
+                   JOIN
+                      (SELECT *
+                         FROM sp_organization
+                        WHERE     id_data_source = V_ID_DATA_SOURCE_AUX
+                              AND version_date = V_VERSION_DATE
+                              AND is_supplier = 1
+                              AND status NOT IN (3)) o2
+                   ON o1.inn = o2.inn AND o1.kpp = o2.kpp
+            UNION ALL
+            SELECT o1.id ID_EAIST1,
+                   O1.ID_PARENT id_parent_eaist1,
+                   o1.formatted_name formatted_name_eaist1,
+                   O1.CONNECT_LEVEL connect_level_eaist1,
+                   NULL,
+                   NULL,
+                   CASE WHEN o1.id IS NULL THEN 0 ELSE 1 END IS_EAIST1,
+                   o2.id ID_EAIST2,
+                   O2.ID_PARENT id_parent_eaist2,
+                   o2.formatted_name formatted_name_eaist2,
+                   O2.CONNECT_LEVEL connect_level_eaist2,
+                   NULL,
+                   NULL,
+                   CASE WHEN o2.id IS NULL THEN 0 ELSE 1 END IS_EAIST2,
+                   NVL (o1.inn, o2.inn) INN,
+                   NVL (o1.kpp, o2.kpp) KPP,
+                   o2.OPEN_DATE_D OPEN_DATE,
+                   o2.CLOSE_DATE_D CLOSE_DATE,
+                   0 is_customer,
+                   1 is_supplier,
+                   V_VERSION_DATE VERSION_DATE
+              FROM    (SELECT *
+                         FROM sp_organization
+                        WHERE     id_data_source = V_ID_DATA_SOURCE
+                              AND version_date = V_VERSION_DATE
+                              AND is_supplier = 1) o1
+                   LEFT JOIN
+                      (SELECT *
+                         FROM sp_organization
+                        WHERE     id_data_source = V_ID_DATA_SOURCE_AUX
+                              AND version_date = V_VERSION_DATE
+                              AND is_supplier = 1
+                              AND status NOT IN (3)) o2
+                   ON o1.inn = o2.inn AND o1.kpp = o2.kpp
+             WHERE O2.ID IS NULL
+            UNION ALL
+            SELECT o1.id ID_EAIST1,
+                   O1.ID_PARENT id_parent_eaist1,
+                   o1.formatted_name formatted_name_eaist1,
+                   O1.CONNECT_LEVEL connect_level_eaist1,
+                   NULL,
+                   NULL,
+                   CASE WHEN o1.id IS NULL THEN 0 ELSE 1 END IS_EAIST1,
+                   o2.id ID_EAIST2,
+                   O2.ID_PARENT id_parent_eaist2,
+                   o2.formatted_name formatted_name_eaist2,
+                   O2.CONNECT_LEVEL connect_level_eaist2,
+                   NULL,
+                   NULL,
+                   CASE WHEN o2.id IS NULL THEN 0 ELSE 1 END IS_EAIST2,
+                   NVL (o2.inn, o2.inn) INN,
+                   NVL (o2.kpp, o2.kpp) KPP,
+                   o1.OPEN_DATE_D OPEN_DATE,
+                   o1.CLOSE_DATE_D CLOSE_DATE,
+                   0 is_customer,
+                   1 is_supplier,
+                   V_VERSION_DATE VERSION_DATE
+              FROM    (SELECT *
+                         FROM sp_organization
+                        WHERE     id_data_source = V_ID_DATA_SOURCE
+                              AND version_date = V_VERSION_DATE
+                              AND is_supplier = 1) o1
+                   RIGHT JOIN
+                      (SELECT *
+                         FROM sp_organization
+                        WHERE     id_data_source = V_ID_DATA_SOURCE_AUX
+                              AND version_date = V_VERSION_DATE
+                              AND is_supplier = 1
+                              AND status NOT IN (3)) o2
+                   ON o1.inn = o2.inn AND o1.kpp = o2.kpp
+             WHERE O1.ID IS NULL;
+
+		-- Привязка кол-ва обработанных строк
+		:V_ROWCOUNT := sql%rowcount;
+
+END;#';
+
+-- SP_CUSTOMER [EAIST1]
+    idx := idx + 1;
+    rec_array(idx).table_name := 'SP_CUSTOMER';
+    rec_array(idx).sql_name := 'SP_CUSTOMER-4 [CLEAN_1156]';
+    rec_array(idx).description := 'Чистка справочника заказчиков';
+    rec_array(idx).execute_order := idx * 100;
+    rec_array(idx).id_data_source := 1;
+    rec_array(idx).is_actual := 1;
+    rec_array(idx).sql_text := start_str || q'#
+	--элементы справочника ЕАИСТ1, у которых нет связки с элементами ЕАИСТ2 и по которым отсутствуют ГК с финансированием на 2014 год и далее;                                          
+	--after reload SP_ORGANIZATION_JOINT
+
+    DELETE from sp_customer c where version_date=V_VERSION_DATE and id_data_source=V_ID_DATA_SOURCE
+    and not exists(select * from sp_customer o where o.version_date=c.version_date and o.id_data_source=c.id_data_source and o.id_parent=c.id)
+    and not exists(select * from SP_ORGANIZATION_JOINT j where j.version_date=c.version_date and j.id_eaist2 is not null and j.id_eaist1=c.id)
+    and not exists(select * from T_CONTRACT con
+                                             join t_finansing_contracts fc on fc.version_date=CON.VERSION_DATE and con.id_data_source=fc.id_data_source and con.id=fc.id_contract
+                                              where con.version_date=c.version_date and con.id_data_source=c.id_data_source and c.id=ID_CUSTOMER and fc.budget_year>=2014);
+
+		-- Привязка кол-ва обработанных строк
+		:V_ROWCOUNT := sql%rowcount;
+
+END;#';
+
+-- LNK_CUSTOMERS_UNITED [EAIST2]
+    idx := idx + 1;
+    rec_array(idx).table_name := 'LNK_CUSTOMERS_UNITED';
+    rec_array(idx).sql_name := 'LNK_CUSTOMERS_UNITED [RELOAD_1156]';
+    rec_array(idx).description := 'Перезагрузка связей между заказчиками и объединенными заказчиками';
+    rec_array(idx).execute_order := idx * 100;
+    rec_array(idx).id_data_source := 1;
+    rec_array(idx).is_actual := 1;
+    rec_array(idx).sql_text := start_str || q'#
+    delete from LNK_CUSTOMERS_UNITED where version_date=V_VERSION_DATE;
+    commit;
+
+        INSERT INTO LNK_CUSTOMERS_UNITED (CUSTOMER_ID,ID_DATA_SOURCE,UNITED_CUSTOMER_ID,UNITED_SOURCE_ID,UNITED_CUSTOMER_CID,VERSION_DATE, FORMATTED_NAME)
+        SELECT id, id_data_source, id_eaist2, id_data_source_j, id_eaist2||'_'||id_data_source_j, V_VERSION_DATE, formatted_name 
+        FROM 
+        (SELECT c.id, c.id_data_source, oj.id_eaist2, oj.id_data_source  id_data_source_j, c.formatted_name
+        FROM sp_customer c
+        INNER JOIN (SELECT id_eaist1, id_eaist2, V_ID_DATA_SOURCE_AUX id_data_source FROM sp_organization_joint WHERE version_date=V_VERSION_DATE and is_customer=1 and id_eaist1 IS NOT NULL and id_eaist2 IS NOT NULL) oj
+        ON c.id=oj.id_eaist1 
+        WHERE c.id_data_source=V_ID_DATA_SOURCE and c.version_date=V_VERSION_DATE
+        UNION ALL
+        SELECT c.id, c.id_data_source, oj.id_eaist1, oj.id_data_source  id_data_source_j, c.formatted_name
+        FROM sp_customer c
+        INNER JOIN (select  id_eaist1, id_eaist2, V_ID_DATA_SOURCE id_data_source from sp_organization_joint WHERE version_date=V_VERSION_DATE and is_customer=1 and id_eaist1 IS NOT NULL and id_eaist2 is null) oj
+        on c.id=oj.id_eaist1 
+        WHERE c.id_data_source=V_ID_DATA_SOURCE and c.version_date=V_VERSION_DATE
+        UNION ALL
+        SELECT c.id, c.id_data_source, c.id id_eaist2, c.id_data_source id_data_source_j, c.formatted_name
+        FROM sp_customer c
+        WHERE c.id_data_source=V_ID_DATA_SOURCE_AUX and c.version_date=V_VERSION_DATE
+        UNION ALL
+        SELECT c.id, c.id_data_source, oj.id_eaist2, oj.id_data_source   id_data_source_j, c.formatted_name
+        FROM sp_customer c
+        INNER JOIN (select id_eaist1, id_eaist2, V_ID_DATA_SOURCE_AUX id_data_source from sp_organization_joint WHERE version_date=V_VERSION_DATE and is_customer=1 and id_eaist1 IS NOT NULL and id_eaist2 IS NOT NULL) oj
+        on c.id=oj.id_eaist1 
+        WHERE c.id_data_source=4 and c.version_date=V_VERSION_DATE
+        UNION ALL
+        SELECT c.id, c.id_data_source, oj.id_eaist1, oj.id_data_source  id_data_source_j, c.formatted_name
+        FROM sp_customer c
+        INNER JOIN (select  id_eaist1, id_eaist2, V_ID_DATA_SOURCE id_data_source from sp_organization_joint WHERE version_date=V_VERSION_DATE and is_customer=1 and id_eaist1 IS NOT NULL and id_eaist2 is null) oj
+        on c.id=oj.id_eaist1 
+        WHERE c.id_data_source=4 and c.version_date=V_VERSION_DATE);
+
+		-- Привязка кол-ва обработанных строк
+		:V_ROWCOUNT := sql%rowcount;
+
+END;#';
+
+-- GENERATE_TREE_CUSTOMERS
+    idx := idx + 1;
+    rec_array(idx).table_name := 'GENERATE_TREE_CUSTOMERS';
+    rec_array(idx).sql_name := 'GENERATE_TREE_CUSTOMERS [RELOAD_1156]';
+    rec_array(idx).description := 'Перестроение дерева';
+    rec_array(idx).execute_order := idx * 100;
+    rec_array(idx).is_actual := 1;
+    rec_array(idx).sql_text := start_str || q'#
+        delete from LNK_SOURCES_ORGS where version_date=V_VERSION_DATE;
+        delete from LNK_CUSTOMERS_ALL_SOURCES where version_date=V_VERSION_DATE;
+        commit;
+
+        SINGLE_CUSTOMERS_SOURCES.GENERATE_TREE_CUSTOMERS(V_VERSION_DATE);
+
+		-- Привязка кол-ва обработанных строк
+		:V_ROWCOUNT := sql%rowcount;
+
+END;#';
+
+-- SP_CUSTOMERS_TREE
+    idx := idx + 1;
+    rec_array(idx).table_name := 'SP_CUSTOMERS_TREE';
+    rec_array(idx).sql_name := 'SP_CUSTOMERS_TREE [RELOAD_1156]';
+    rec_array(idx).description := 'Перезагрузка сводного дерева заказчиков';
+    rec_array(idx).execute_order := idx * 100;
+    rec_array(idx).is_actual := 1;
+    rec_array(idx).sql_text := start_str || q'#
+    delete from SP_CUSTOMERS_TREE WHERE version_date = V_VERSION_DATE;
+    commit;
+
+          insert into SP_CUSTOMERS_TREE (RN,ID,  ID_SOURCE,  ID_PARENT,ID_PARENT_SOURCE,ID_LEVEL,FORMATTED_NAME,IS_AGGREGATOR,VERSION_DATE, KEY_SORT)
+                      SELECT ROWNUM rn,
+                             id,
+                             id_source,
+                             id_parent,
+                             id_parent_source,
+                             id_level,
+                             formatted_name,
+                             is_aggregator,
+                             V_VERSION_DATE,
+                             s_key_sort
+                        FROM (    SELECT t.id,
+                                         t.id_source,
+                                         t.id_parent,
+                                         t.id_parent_source,
+                                         LEVEL + 1 AS id_level,
+                                         formatted_name,
+                                         s_key_sort,
+                                         is_aggregator,
+                                         id_agg,
+                                         parent_agg
+                                    FROM (SELECT r.id,
+                                                 r.id_source,
+                                                 r.id_parent,
+                                                 r.id_parent_source,
+                                                 c.formatted_name,
+                                                 c.s_key_sort,
+                                                 r.id || '_' || r.id_source AS id_agg,
+                                                 r.id_parent || '_' || r.id_parent_source
+                                                    AS parent_agg,
+                                                 is_aggregator
+                                            FROM    LNK_CUSTOMERS_ALL_SOURCES r
+                                                 LEFT JOIN
+                                                    sp_customer c
+                                                 ON c.version_date = V_VERSION_DATE
+                                                    AND c.id_data_source = r.id_source
+                                                    AND c.id = r.id
+                                           WHERE r.version_date = V_VERSION_DATE ) t
+                              CONNECT BY NOCYCLE PRIOR id_agg = parent_agg
+                              START WITH parent_agg = '0_2')
+                  CONNECT BY PRIOR id_agg = parent_agg
+                  START WITH parent_agg = '0_2'
+           ORDER SIBLINGS BY CASE
+                                WHEN id_level IN (2, 3)
+                                THEN
+                                   LPAD (s_key_sort, 16, '0')
+                                ELSE
+                                   formatted_name
+                             END;
+
+		-- Привязка кол-ва обработанных строк
+		:V_ROWCOUNT := sql%rowcount;
+
+END;#';
+
+-- LNK_CUSTOMERS_ALL_LEVEL
+    idx := idx + 1;
+    rec_array(idx).table_name := 'LNK_CUSTOMERS_ALL_LEVEL';
+    rec_array(idx).sql_name := 'LNK_CUSTOMERS_ALL_LEVEL [RELOAD_1156]';
+    rec_array(idx).description := 'Перезагрузка связей объединенных заказчиков';
+    rec_array(idx).execute_order := idx * 100;
+    rec_array(idx).id_data_source := 2;
+    rec_array(idx).is_actual := 1;
+    rec_array(idx).sql_text := start_str || q'#
+    delete from LNK_CUSTOMERS_ALL_LEVEL where version_date=V_VERSION_DATE;
+    commit;
+
+        insert into LNK_CUSTOMERS_ALL_LEVEL (ID,ID_PARENT,CONNECT_LEVEL,VERSION_DATE,ID_DATA_SOURCE,CONNECT_LEVEL_PARENT)
+        select id, ID_FIRST, id_level, version_date, id_source, ID_LEVEL_FIRST 
+        from
+          (SELECT id,
+                 trim(',' FROM sys_connect_by_path(CASE WHEN LEVEL = 1 THEN id END, ',')) ID_FIRST,
+                 id_level, version_date, id_source,
+                 trim(',' FROM sys_connect_by_path(CASE WHEN LEVEL = 1 THEN id_level END, ',')) ID_LEVEL_FIRST
+          from (
+          select id||'_'||id_source id, id_source, id_parent||'_'||id_parent_source id_parent, id_level, version_date, id_parent_source 
+          from SP_CUSTOMERS_TREE where version_date=V_VERSION_DATE
+          union
+          select '0_'||V_ID_DATA_SOURCE, V_ID_DATA_SOURCE, null, 1, V_VERSION_DATE, V_ID_DATA_SOURCE from dual
+          ) soj
+          connect BY PRIOR id =id_parent )
+        where id<>ID_FIRST;
+
+		-- Привязка кол-ва обработанных строк
+		:V_ROWCOUNT := sql%rowcount;
+
+END;#';
+
+-- SP_CUSTOMERS_TREE
+    idx := idx + 1;
+    rec_array(idx).table_name := 'SP_CUSTOMERS_TREE';
+    rec_array(idx).sql_name := 'SP_CUSTOMERS_TREE [CLEAN_1156]';
+    rec_array(idx).description := 'Чистка сводного дерева заказчиков';
+    rec_array(idx).execute_order := idx * 100;
+    rec_array(idx).id_data_source := 1;
+    rec_array(idx).is_actual := 1;
+    rec_array(idx).sql_text := start_str || q'#
+	--правка дерева, заказчики по е1, которые не имеют подведов в объединенном справочнике и не имеют контрактов с финансированием на budget_year>=2014        
+    delete from SP_CUSTOMERS_TREE c where version_date=V_VERSION_DATE and id_source=V_ID_DATA_SOURCE
+    and not exists(select * from SP_CUSTOMERS_TREE o where o.version_date=c.version_date and o.id_source=c.id_source and o.id_parent=c.id)
+    and not exists(select * from SP_ORGANIZATION_JOINT j where j.version_date=c.version_date and j.id_eaist2 is not null and j.id_eaist1=c.id)
+    and not exists(select * from T_CONTRACT con
+                                             join t_finansing_contracts fc on fc.version_date=CON.VERSION_DATE and con.id_data_source=fc.id_data_source and con.id=fc.id_contract
+                                              where con.version_date=c.version_date and con.id_data_source=c.id_source and c.id=ID_CUSTOMER and fc.budget_year>=2014);
+
+		-- Привязка кол-ва обработанных строк
+		:V_ROWCOUNT := sql%rowcount;
+
+END;#';
+
 
     -- Вставка запросов
     for i in 1..rec_array.count loop
