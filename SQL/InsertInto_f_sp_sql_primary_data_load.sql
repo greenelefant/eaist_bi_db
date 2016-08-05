@@ -5331,7 +5331,7 @@ END;#';
         INSERT INTO T_LOT_NMC_EXAMINATION (ID, LOT_ID, SEND_DATE, APPROVED_DATE, EXPECTED_EXAMINATION_DATE, CURRENT_STATE, EXPECTED_EXAMINATION_END_DATE, ID_DATA_SOURCE, version_date, GRBS)
         SELECT ex.ID, ex.LOT_ID, ex.SEND_DATE, ex.APPROVED_DATE, ex.EXPECTED_EXAMINATION_DATE, ex.CURRENT_STATE, ex.EXPECTED_EXAMINATION_END_DATE, V_ID_DATA_SOURCE ID_DATA_SOURCE, V_VERSION_DATE version_date, grbs_code 
         FROM (SELECT ID, LOT_ID, SEND_DATE, APPROVED_DATE, EXPECTED_EXAMINATION_DATE, CURRENT_STATE, EXPECTED_EXAMINATION_END_DATE FROM D_LOT_NMC_EXAMINATION@eaist_mos_shard) ex
-        JOIN (SELECT * FROM T_LOT WHERE id_data_source=V_ID_DATA_SOURCE) lots ON lots.id=ex.lot_id AND lots.version_date=V_VERSION_DATE AND lots.id_Data_source=V_ID_DATA_SOURCE
+        JOIN (SELECT * FROM T_LOT WHERE id_data_source=V_ID_DATA_SOURCE) lots ON lots.id_entity=ex.lot_id AND lots.version_date=V_VERSION_DATE AND lots.id_Data_source=V_ID_DATA_SOURCE
         LEFT JOIN (SELECT lcag.id lnk_id, cust.grbs_code, lcag.version_date
                   FROM LNK_CUSTOMERS_ALL_LEVEL lcag
                   JOIN sp_customer cust ON lcag.id_parent=cust.id||'_'||cust.id_DATA_source AND lcag.version_date=cust.version_date AND cust.connect_level=3
