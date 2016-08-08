@@ -4102,7 +4102,7 @@ END;#';
                  --from contract_stage@eaist_mos_rc cs
                  from eaist_rc.contract_stage@eaist_mos_shard cs
                  --join CONTRACT_STAGE_EXAMINATION@eaist_mos_rc cse on cs.id=cse.stage_id 
-                 join eaist_rc.CONTRACT_STAGE_EXAMINATION@eaist_mos_shard cse on cs.id=cse.stage_id 
+                 left join eaist_rc.CONTRACT_STAGE_EXAMINATION@eaist_mos_shard cse on cs.id=cse.stage_id 
                  where cs.deleted_date is null and cse.is_actual = 1 and cse.is_violation_acceptance = 0) 
                  where avg_state=403 and created_date=max_created_date and max_document_date=document_date) exec_date on exec_date.contract_id=con.id          
               
@@ -4380,11 +4380,11 @@ END;#';
                    V_VERSION_DATE,
                    document_date
               FROM CONTRACT_STAGE@EAIST_MOS_RC cs
-              join (select distinct
+              left join (select distinct
                       stage_id,
                       document_date,
                       max(document_date) over (partition by stage_id) max_document_date
-                      from CONTRACT_STAGE_EXAMINATION@eaist_mos_rc where is_actual = 1 and is_violation_acceptance = 0) cse on cse.stage_id=cs.id and max_document_date=document_date
+                      from CONTRACT_STAGE_EXAMINATION@eaist_mos_rc where is_actual = 1 and is_violation_acceptance = 0) cse on cse.stage_id=cs.id and max_document_date=document_date and cs.state_id=403
              WHERE DELETED_DATE IS NULL; 
 
     -- Привязка кол-ва обработанных строк
