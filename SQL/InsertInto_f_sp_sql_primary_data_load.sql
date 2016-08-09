@@ -289,7 +289,7 @@ END;#';
                        p.status,
                        parent_grbs,
                        address,
-                       okopf,
+                       --okopf,
                        ogrn,
                        phone,
                        email
@@ -2255,9 +2255,10 @@ SELECT pv.ID as Id1,
                         select com.*, 
                                 max(protocol_number) over (partition by procedure_Id) max_protocol,
                                 max(version) over (partition by procedure_Id, protocol_number) max_version,
-                                max(protocol_created_date) over (partition by procedure_Id, protocol_number, version) max_protocol_date
+                                max(protocol_created_date) over (partition by procedure_Id, protocol_number, version) max_protocol_date,
+                                max(created_Date) over (partition by procedure_Id, protocol_number, version) max_created_date
                         from d_commission_session@eaist_mos_shard com  where session_type not in (1,18) and deleted_date is null
-                        ) where protocol_number= max_protocol and version=max_version and (max_protocol_date=protocol_created_date or protocol_created_date is null)) not_ea_oos
+                        ) where protocol_number= max_protocol and version=max_version and (max_protocol_date=protocol_created_date or (protocol_created_date is null and created_Date=max_created_date))) not_ea_oos
                     ON not_ea_oos.procedure_id=pe.id
                     LEFT JOIN (SELECT distinct lv.joint_auction, pl.PROCEDURE_ENTITY_ID FROM D_PROCEDURE_LOT_ENTRY@EAIST_MOS_SHARD pl
                                         JOIN (select id , joint_auction from d_lot_version@eaist_mos_shard where deleted_date IS NULL ) lv 
