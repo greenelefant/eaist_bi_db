@@ -2191,9 +2191,9 @@ SELECT pv.ID as Id1,
                            changeCount.CHANGE_COUNT,
                            cancel_pv.created_Date CANCEL_DATE,
                            pre.PROCEDURE_DATE as REQUEST_END_DATE,
-                           dates.first_pub_date,
-                           dates.last_pub_date,
-						   pe.published_id
+                           dates.first_pub_date, --FIRST_PUBLSIH_DATE
+                           dates.last_pub_date, --LAST_PUBLISH_DATE
+						   pe.published_id --PREV_ENTITY_ID
                     FROM (select id,entity_id, created_date, PROCUREMENT_SUBJECT,ACCOMODATION_LEVEL,UNSUCCESSFUL_PURCHASE,status_id,state_id, ORGANIZER_ID from D_PROCEDURE_VERSION@EAIST_MOS_SHARD where deleted_date IS NULL) pv
                     --Получаем дату создания версии когда статус перешел в опубликовано              
                     --Устраняем дубли в D_PROCEDURE_VERSION
@@ -2264,12 +2264,12 @@ SELECT pv.ID as Id1,
                                         JOIN (select id , joint_auction from d_lot_version@eaist_mos_shard where deleted_date IS NULL ) lv 
                                         ON pl.lot_id = lv.id AND pl.is_actual = 1 and lv.joint_auction=1) pl
                                on pl.PROCEDURE_ENTITY_ID = pe.ID
-                    LEFT JOIN (select distinct entity_id,
-                                min(case when ver.status_id=7 then ver.created_date else null end) over (partition by ent.reg_number) first_pub_date,
-                                max(case when ver.status_id=7 then ver.created_date else null end) over (partition by ver.entity_id) last_pub_date
-                                FROM (select entity_id, status_id, createD_date from D_PROCEDURE_VERSION@EAIST_MOS_SHARD) ver
+                    LEFT JOIN (select distinct ent.reg_number,
+                                min(case when ver.status_id=7 then ver.status_date else null end) over (partition by ent.reg_number) first_pub_date,
+                                max(case when ver.status_id=7 then ver.status_date else null end) over (partition by ent.reg_number) last_pub_date
+                                FROM d_procedure_status_history@eaist_mos_shard ver
                                 JOIN D_PROCEDURE_ENTITY@EAIST_MOS_SHARD ent
-                                ON ver.entity_id=ent.id) dates on dates.entity_id=pe.id
+                                ON ver.entity_id=ent.id) dates on dates.reg_number=pe.reg_number
                     LEFT JOIN (select distinct procedure_entity_id from (
                               select procedure_Id procedure_entity_id, place from d_ea_winner@eaist_mos_shard
                               union
@@ -2773,12 +2773,12 @@ END;#';
                    TO_NUMBER(SUBSTR(dppe.PERIOD, 1, 4)) as PERIOD_BEGIN,
                    pph.status_date,
                    dppv.version,
-                   dates.first_pub_Date,
+                   dates1.first_pub_Date,
                    dates.last_change_pub_date,
-                   dates.last_pub_date,
-                   dates.first_approve_date,
+                   dates1.last_pub_date,
+                   dates1.first_approve_date,
                    dates.last_change_approve_date,
-                   dates.last_approve_date
+                   dates1.last_approve_date
               FROM D_PURCHASE_PLAN_ENTITY@EAIST_MOS_SHARD dppe
                    JOIN (SELECT d.ID,
                                 d.ENTITY_ID,
@@ -2839,16 +2839,21 @@ END;#';
                     Left join (select entity_id, max(status_date) status_date from D_PURCHASE_PLAN_STATUS_HISTORY@eaist_mos_shard group by entity_id) pph on pph.entity_id=dppe.id 
                     LEFT JOIN (select * from (                
                                 select distinct ver.entity_id,
-                                min(case when stat.status_id=8 then status_date else null end) over (partition by ver.entity_id) first_pub_date,
                                 max(case when stat.status_id=8 and ver.id=ver.max_id then status_date else null end) over (partition by ver.entity_id) last_change_pub_date,
-                                max(case when stat.status_id=8 then status_date else null end) over (partition by ver.entity_id) last_pub_date,
-                                min(case when stat.status_id=5 then status_date else null end) over (partition by ver.entity_id) first_approve_date,
-                                max(case when stat.status_id=5 and ver.id=ver.max_id then status_date else null end) over (partition by ver.entity_id) last_change_approve_date,
-                                max(case when stat.status_id=5 then status_date else null end) over (partition by ver.entity_id) last_approve_date
+                                max(case when stat.status_id=5 and ver.id=ver.max_id then status_date else null end) over (partition by ver.entity_id) last_change_approve_date
                                 FROM (select v.id, v.entity_id, max(id) over (partition by entity_id) max_id from D_PURCHASE_PLAN_VERSION@EAIST_MOS_SHARD v) ver
                                 JOIN D_PURCHASE_PLAN_STATUS_HISTORY@EAIST_MOS_SHARD stat
                                 ON ver.id=stat.version_id
-                                ) where coalesce(first_pub_date, last_change_pub_date,first_approve_date, last_change_approve_date) is not null) dates on dates.entity_id=dppe.id;
+                                ) where coalesce(last_change_pub_date,last_change_approve_date) is not null) dates on dates.entity_id=dppe.id
+                    LEFT JOIN (select * from (                
+                                select distinct pe.customer_id, pe.period,
+                                min(case when stat.status_id=8 then status_date else null end) over (partition by pe.customer_id, pe.period) first_pub_date,
+                                max(case when stat.status_id=8 then status_date else null end) over (partition by pe.customer_id, pe.period) last_pub_date,
+                                min(case when stat.status_id=5 then status_date else null end) over (partition by pe.customer_id, pe.period) first_approve_date,
+                                max(case when stat.status_id=5 then status_date else null end) over (partition by pe.customer_id, pe.period) last_approve_date
+                                FROM d_purchase_plan_entity@eaist_mos_shard pe
+                                JOIN D_PURCHASE_PLAN_STATUS_HISTORY@EAIST_MOS_SHARD stat
+                                ON pe.id=stat.entity_id) where coalesce(first_pub_date,first_approve_date) is not null) dates1 on dates1.customer_id=dppe.customer_id and dates1.period=dppe.period;
 
     -- Привязка кол-ва обработанных строк
     :V_ROWCOUNT := SQL%ROWCOUNT;
