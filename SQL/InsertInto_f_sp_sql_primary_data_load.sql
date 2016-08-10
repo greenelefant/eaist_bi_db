@@ -226,7 +226,7 @@ END;#';
                                               status,
                                               parent_grbs,
                                               address,
-                                              --okopf,
+                                              okopf_ID,
                                               ogrn,
                                               phone,
                                               email)
@@ -289,7 +289,7 @@ END;#';
                        p.status,
                        parent_grbs,
                        address,
-                       --okopf,
+                       okopf,
                        ogrn,
                        phone,
                        email
