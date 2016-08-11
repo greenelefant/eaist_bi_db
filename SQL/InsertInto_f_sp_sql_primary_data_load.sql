@@ -3977,7 +3977,7 @@ END;#';
     rec_array(idx).description := 'Контракт';
     rec_array(idx).execute_order := idx * 100;
     rec_array(idx).id_data_source := 2;
-    rec_array(idx).is_actual := 1;
+    rec_array(idx).is_actual := 0;
     rec_array(idx).sql_text := start_str || q'#
         INSERT INTO REPORTS.T_CONTRACT (ID,
                                          NAME,
@@ -8033,7 +8033,7 @@ END;#';
     rec_array(idx).sql_name := 'SP_TRADING_PLATFORM [EAIST1]';
     rec_array(idx).description := 'Торговые площадки';
     rec_array(idx).execute_order := idx * 100;
-    rec_array(idx).id_data_source := 2;
+    rec_array(idx).id_data_source := 1;
     rec_array(idx).is_actual := 1;
     rec_array(idx).sql_text := start_str || q'#
     INSERT INTO SP_TRADING_PLATFORM (
@@ -8508,6 +8508,7 @@ END;#';
     rec_array(idx).execute_order := idx * 100;
     rec_array(idx).id_data_source := 1;
     rec_array(idx).is_actual := 1;
+    rec_array(idx).id_data_source_aux := 2;
     rec_array(idx).sql_text := start_str || q'#
     delete from LNK_CUSTOMERS_UNITED where version_date=V_VERSION_DATE;
     commit;
