@@ -2665,7 +2665,7 @@ END;#';
                    JOIN
                       D_BID@EAIST_MOS_SHARD b
                    ON bp.BID_ID = b.ID AND b.deleted_date IS NULL
-                   JOIN t_lot LV on  LV.ID_ENTITY=B.LOT_ID AND LV.ID_DATA_SOURCE=V_ID_DATA_SOURCE AND LV.VERSION_DATE=V_VERSION_DATE-1;
+                   JOIN t_lot LV on  LV.ID_ENTITY=B.LOT_ID AND LV.ID_DATA_SOURCE=V_ID_DATA_SOURCE AND LV.VERSION_DATE=V_VERSION_DATE;
 
     -- Привязка кол-ва обработанных строк
     :V_ROWCOUNT := SQL%ROWCOUNT;
@@ -8072,7 +8072,7 @@ END;#';
     rec_array(idx).id_data_source := 2;
     rec_array(idx).is_actual := 1;
     rec_array(idx).sql_text := start_str || q'#
-    insert into SP_OKPF (id, code, name, id_data_source, version_date)
+    insert into SP_OKOPF (id, code, name, id_data_source, version_date)
 	select id, code, name, v_id_Data_source, V_version_date from n_okopf@eaist_mos_nsi where deleted_date is null;
 
     -- Привязка кол-ва обработанных строк
