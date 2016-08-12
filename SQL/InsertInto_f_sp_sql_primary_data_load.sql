@@ -4073,7 +4073,7 @@ END;#';
                    epSumm.EP_SUMM,
                    paymentSumm.PAYMENT_SUMM,
                    cd.exec_date,
-                   case when con.state_id in (7, 9) then exec_date.document_date else null end exec_end_Date--cd.end_exec_date
+                   case when con.state_id in (9, 10) then exec_date.document_date else null end exec_end_Date--cd.end_exec_date
               --FROM CONTRACT@EAIST_MOS_RC con
               FROM eaist_rc.CONTRACT@eaist_mos_shard con
               --join contract_lot@eaist_mos_rc cl on con.lot_id = cl.id
@@ -6511,6 +6511,7 @@ END;#';
     rec_array(idx).id_data_source := 1;
     rec_array(idx).is_actual := 1;
     rec_array(idx).sql_text := start_str || q'#
+    
     insert into T_CONTRACT(ID      
                                                 ,ID_STATUS                 
                                                 ,ID_CUSTOMER             
@@ -6534,7 +6535,8 @@ END;#';
                                                 ,EXECUTION_BEGIN --  Дата регистрации исполнения 
                                                 ,sign_number    
                                                 ,PAYMENT_SUM       
-                                                ,ID_EXT_SYSTEM                          
+                                                ,ID_EXT_SYSTEM 
+                                                ,FACT_END_DATE
                                                 ,ID_DATA_SOURCE
                                                 ,VERSION_DATE     ) 
             select ID                   
@@ -6561,13 +6563,14 @@ END;#';
                     ,sign_number 
                     ,ps.payment_summ
                     ,EXT_SYSTEM_ID
+                    ,fed.fact_end_date
                     ,V_ID_DATA_SOURCE
                     ,V_VERSION_DATE
             from contract@tkdbn1 c
-            left join (select max(fact_end_date) fact_end, contract_id from execution@tkdbn1 group by contract_id) fed on c.id=fed.contract_id --Фактическая дата окончания срока исполнения/Фактическая дата окончания контракта/Фактическая дата расторжения государственного контракта
+            left join (select max(fact_end_date) fact_end, contract_id, max(case when status_id=1203 then fact_end_date end) fact_end_date from execution@tkdbn1 group by contract_id) fed on c.id=fed.contract_id --Фактическая дата окончания срока исполнения/Фактическая дата окончания контракта/Фактическая дата расторжения государственного контракта
             left join (select max(plan_end_date) plan_end, contract_id from execution@tkdbn1 group by contract_id) ped on c.id=ped.contract_id --Плановая дата окончания срока исполнения/Плановая дата окончания контракта/Плановая дата расторжения государственного контракта
             left join (select  termination_reason_id,termination_id,contract_id from execution@tkdbn1 where termination_reason_id is not null and type_id=71 and status_id=1203) tr on c.id=tr.contract_id
-            left join (select nvl(sum(payment_summ),0) payment_summ, contract_id from CONTRACT_BUDJET_LIABILITY@tkdbn1 where status_id = 20001 group by contract_id) ps on c.id=ps.contract_id;            
+            left join (select nvl(sum(payment_summ),0) payment_summ, contract_id from CONTRACT_BUDJET_LIABILITY@tkdbn1 where status_id = 20001 group by contract_id) ps on c.id=ps.contract_id;          
 
     -- Привязка кол-ва обработанных строк
     :V_ROWCOUNT := SQL%ROWCOUNT;
