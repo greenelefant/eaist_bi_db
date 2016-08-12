@@ -3149,6 +3149,7 @@ END;#';
     rec_array(idx).id_data_source := 2;
     rec_array(idx).is_actual := 1;
     rec_array(idx).sql_text := start_str || q'#
+    
         INSERT INTO T_PURCHASE_DETAILED (ID,
                                           ID_PURCHASE,
                                           EXTENDED_CODE,
@@ -3274,9 +3275,12 @@ END;#';
                                       from (select DETAILED_PURCHASE_ID, smp_quota, lot_id from D_LOT_DPURCHASE_ENTRY@EAIST_MOS_SHARD where is_actual=1) LDPE
                                       join (select id from D_LOT_VERSION@EAIST_MOS_SHARD where deleted_date is null) LV ON LDPE.LOT_ID=LV.ID) lpe
                                       ON lpe.DETAILED_PURCHASE_ID=dpv.ID 
-                           LEFT JOIN (select ldp.*, row_number() over (partition by DETAILED_PURCHASE_ID@EAIST_MOS_SHARD order by id desc ) rn from D_LOT_DPURCHASE_ENTRY@EAIST_MOS_SHARD ldp where ldp.is_actual = 1            
-                           and exists (SELECT id FROM d_lot_version@EAIST_MOS_SHARD WHERE deleted_date IS NULL AND status_id NOT IN (1)--status на формировании
-                                 and  ldp.lot_id = id )) ldpe ON dpv.id = ldpe.DETAILED_PURCHASE_ID and ldpe.rn=1
+                           LEFT JOIN (select ldp.*, row_number() over (partition by ldp.detailed_purchase_id order by case when stat.status_id=5 then 100 else 10 end desc, stat.status_date desc ) rn 
+                                        from D_LOT_DPURCHASE_ENTRY@EAIST_MOS_SHARD ldp 
+                                        inner join (select id from d_lot_version@EAIST_MOS_SHARD where deleted_date IS NULL AND status_id NOT IN (1) ) lv on ldp.lot_id = lv.id
+                                        JOIN D_LOT_STATUS_HISTORY@EAIST_MOS_SHARD stat ON lv.id=stat.version_id
+                                        where ldp.is_actual = 1 
+                                      ) ldpe ON dpv.id = ldpe.DETAILED_PURCHASE_ID and ldpe.rn=1
                       LEFT JOIN (  SELECT MAX(PLAN_SCHEDULE_ID) PLAN_SCHEDULE_ID,
                                        detailed_purchase_id
                                   FROM D_PLAN_SCHEDULE_DPURCH_ENTRY@EAIST_MOS_SHARD 
