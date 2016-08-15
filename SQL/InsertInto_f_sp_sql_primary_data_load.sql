@@ -2165,11 +2165,21 @@ SELECT pv.ID as Id1,
                            --pv.TRADE_OBJECT_TYPE -- string value as ID_TORG_TYPE,                   
                            0 AS IS_44FZ,
                            pv.ORGANIZER_ID AS ID_ENTERPRISE_ENTITY,
-                           CASE 
+                           /*CASE 
                             WHEN pe.METHOD_OF_SUPPLIER_ID=4 THEN
                               CASE WHEN PV.STATUS_ID=18 THEN oos.publish_date ELSE oos.lim_publish_date END
                             ELSE
-                              null
+                              dates.first_pub_date
+                           END */
+                           CASE 
+                            WHEN pe.METHOD_OF_SUPPLIER_ID=4 THEN
+                              CASE 
+                                WHEN PV.STATUS_ID=18 and oos.publish_date is not null THEN oos.publish_date
+                                when (PV.STATUS_ID<>18 or oos.publish_date is null) and oos.lim_publish_date is not null then oos.lim_publish_date
+                                else dates.first_pub_date
+                              END
+                            ELSE
+                              dates.first_pub_date
                            END AS PUBLISH_OOS_DATE,
                            CASE 
                             WHEN pe.METHOD_OF_SUPPLIER_ID=4 THEN
