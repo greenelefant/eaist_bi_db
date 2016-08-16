@@ -95,8 +95,11 @@ END;#';
     rec_array(idx).id_data_source := 1;
     rec_array(idx).is_actual := 1;
     rec_array(idx).sql_text := start_str || q'#
-        insert into REPORTS.SP_ORGANIZATION(ID,ID_PARENT,INN,KPP, OPEN_DATE_D,ORGANIZATION_TYPE,FULL_NAME,SHORT_NAME,ID_DATA_SOURCE,VERSION_DATE,IS_CUSTOMER,IS_SUPPLIER,ENTITY_ID,FORMATTED_NAME, CONNECT_LEVEL) 
-		select o.*,level from (
+  insert into REPORTS.SP_ORGANIZATION(ID,ID_PARENT,INN,KPP, OPEN_DATE_D,ORGANIZATION_TYPE,FULL_NAME,SHORT_NAME,ID_DATA_SOURCE,VERSION_DATE,IS_CUSTOMER,IS_SUPPLIER,ENTITY_ID,FORMATTED_NAME, CONNECT_LEVEL,IS_SMP,address,
+  ogrn,phone,email) 
+		select o.ID, o.PARENT_ID, o.INN, o.KPP, o.DATE_START, o.COMPANY_TYPE, o.FULL_NAME, o.NAME, V_ID_DATA_SOURCE, V_VERSION_DATE, o.IS_CUSTOMER, o.IS_SUPPLIER, o.entity_id, o.FORMATTED_NAME, level, 
+    nvl(o.flag_is_smallbusiness,0) IS_SMP, o.full_address, o.ogrn, o.phone, o.email
+  from (
                             SELECT curr.ID,
                               curr.PARENT_ID,
                               curr.INN,
@@ -105,17 +108,21 @@ END;#';
                               curr.COMPANY_TYPE,
                               curr.FULL_NAME,
                               curr.NAME,
-                              V_ID_DATA_SOURCE,
-                              V_VERSION_DATE,
                               case when company_type=3 then 1 else 0 end as IS_CUSTOMER,
                               case when company_type in (1,2) then 1 else 0 end as IS_SUPPLIER,
                               curr.entity_id,
-                              FORMATE_NAME(FULL_NAME) as FORMATTED_NAME
-                             FROM enterprise@tkdbn1 curr,
-                                  (  SELECT entity_id, MAX (t.date_start) max_date, COUNT (*) cnt
+                              FORMATE_NAME(FULL_NAME) as FORMATTED_NAME,
+                              curr.flag_is_smallbusiness,
+                              a.full_address,
+                              curr.ogrn,
+                              curr.phone,
+                              curr.email
+                             FROM enterprise@tkdbn1 curr
+                             JOIN  (  SELECT entity_id, MAX (t.date_start) max_date, COUNT (*) cnt
                                        FROM enterprise@tkdbn1 t
-                                   GROUP BY entity_id) mv
-                              WHERE curr.entity_id = mv.entity_id AND curr.date_start = mv.max_date) o
+                                   GROUP BY entity_id) mv ON curr.entity_id = mv.entity_id AND curr.date_start = mv.max_date
+                             LEFT JOIN address@tkdbn1 a ON curr.address_fact_id=a.id
+                              ) o
           connect by prior o.entity_id=o.parent_id
           start with o.parent_id is null;
 
@@ -159,7 +166,7 @@ END;#';
                     select id,0,regexp_replace(complex_name,'^[^[:alpha:]]{1,}',''),regexp_replace(complex_name,'^[^[:alpha:]]{1,}',''),2,null, null, null,null,null,V_ID_DATA_SOURCE ID_DATA_SOURCE,V_VERSION_DATE VERSION_DATE,to_char(id) key_sort
                         from sp_complex where ID_DATA_SOURCE=V_ID_DATA_SOURCE and VERSION_DATE=V_VERSION_DATE
                      union all
-                    select v.id,v.id_complex,v.grbs,v.grbs,3,org.inn,org.kpp, open_date_d, null,null,V_ID_DATA_SOURCE ID_DATA_SOURCE,V_VERSION_DATE,v.grbs key_sort
+                    select v.id,v.id_complex,v.grbs,v.grbs,3,org.inn,org.kpp, open_date_d, org.is_smp,null,V_ID_DATA_SOURCE ID_DATA_SOURCE,V_VERSION_DATE,v.grbs key_sort
                          from (select distinct id,grbs,id_complex from sp_department where ID_DATA_SOURCE=V_ID_DATA_SOURCE and VERSION_DATE=V_VERSION_DATE) v
                          join sp_organization org on v.id=org.id and org.id_data_source=V_ID_DATA_SOURCE and ORG.VERSION_DATE=V_VERSION_DATE
                      union all
