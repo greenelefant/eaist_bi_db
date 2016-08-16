@@ -8714,6 +8714,7 @@ END;#';
     and not exists(select * from T_CONTRACT con
                                              join t_finansing_contracts fc on fc.version_date=CON.VERSION_DATE and con.id_data_source=fc.id_data_source and con.id=fc.id_contract
                                               where con.version_date=c.version_date and con.id_data_source=c.id_source and c.id=ID_CUSTOMER and fc.budget_year>=2014);
+                                              
 
 		-- Привязка кол-ва обработанных строк
 		:V_ROWCOUNT := sql%rowcount;
