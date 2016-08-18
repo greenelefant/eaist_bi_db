@@ -2338,15 +2338,11 @@ SELECT pv.ID as Id1,
                               CASE WHEN PV.STATUS_ID=18 or have_win.procedure_entity_id is not null THEN oos.protocol_date ELSE oos.lim_protocol_date END
                             ELSE
                               CASE 
-                                WHEN (pe.METHOD_OF_SUPPLIER_ID=1 and not_ea_oos.session_type in (2,3)) or
-                                      (pe.METHOD_OF_SUPPLIER_ID=2 and not_ea_oos.session_type in (5)) or
-                                      (pe.METHOD_OF_SUPPLIER_ID=5 and not_ea_oos.session_type in (12)) or
-                                      (pe.METHOD_OF_SUPPLIER_ID=6 and not_ea_oos.session_type in (15)) or
-                                      have_win.procedure_entity_id is not null
-                                      THEN not_ea_oos.protocol_created_date
-                                else null
+                                WHEN PV.STATUS_ID=18 THEN not_ea_oos_win.protocol_created_date
+                                else not_ea_oos.protocol_created_date
                               END
-                           END AS CREATE_PROTOCOL_DATE,--nvl(oos.PROTOCOL_DATE, not_ea_oos.protocol_created_date) AS CREATE_PROTOCOL_DATE,                          
+                           END  
+                           AS CREATE_PROTOCOL_DATE,--nvl(oos.PROTOCOL_DATE, not_ea_oos.protocol_created_date) AS CREATE_PROTOCOL_DATE,                          
                            pe.REG_NUMBER,
                            --pv.TRADE_OBJECT_TYPE -- string value as ID_TORG_TYPE,                   
                            0 AS IS_44FZ,
@@ -2371,7 +2367,7 @@ SELECT pv.ID as Id1,
                             WHEN pe.METHOD_OF_SUPPLIER_ID=4 THEN
                               CASE WHEN PV.STATUS_ID=18 THEN oos.protocol_date ELSE oos.lim_protocol_date END
                             ELSE
-                              not_ea_oos.protocol_created_date
+                              not_ea_oos_win.protocol_created_date
                            END AS LAST_PROTOCOL_DATE_FROM_OOS,
                            pe.CUSTOMER_ID,
                            pv.UNSUCCESSFUL_PURCHASE,
@@ -2448,13 +2444,31 @@ SELECT pv.ID as Id1,
                               on oos_nolim.PROCEDURE_ENTITY_ID=oos_lim.PROCEDURE_ENTITY_ID) oos
                     ON oos.PROCEDURE_ENTITY_ID = pe.ID
                     LEFT JOIN (select distinct nvl(protocol_created_date, created_Date) protocol_created_date, procedure_id, session_type from (
-                        select com.*, 
+                        select com.*,
                                 max(protocol_number) over (partition by procedure_Id) max_protocol,
-                                max(version) over (partition by procedure_Id, protocol_number) max_version,
-                                max(protocol_created_date) over (partition by procedure_Id, protocol_number, version) max_protocol_date,
-                                max(created_Date) over (partition by procedure_Id, protocol_number, version) max_created_date
-                        from d_commission_session@eaist_mos_shard com  where session_type not in (1,18) and deleted_date is null
-                        ) where protocol_number= max_protocol and version=max_version and (max_protocol_date=protocol_created_date or (protocol_created_date is null and created_Date=max_created_date))) not_ea_oos
+                                max(created_Date) over (partition by procedure_Id, protocol_number) max_created_date,
+                                max(protocol_published_date) over (partition by procedure_Id, protocol_number, created_date) max_published_date,
+                                max(session_type) over (partition by procedure_Id, protocol_number, created_date,protocol_published_date) max_session_type
+                        from d_commission_session@eaist_mos_shard com 
+                        where session_type not in (1,18) and deleted_date is null
+                        ) where 
+                            protocol_number= max_protocol and created_date=max_created_date and (max_published_date=protocol_published_date or (session_type=max_session_type))) not_ea_oos_win
+                    ON not_ea_oos_win.procedure_id=pe.id
+                    LEFT JOIN (select distinct nvl(protocol_created_date, created_Date) protocol_created_date, procedure_id, session_type from (
+                        select com.*,
+                                max(protocol_number) over (partition by procedure_Id) max_protocol,
+                                max(created_Date) over (partition by procedure_Id, protocol_number) max_created_date,
+                                max(protocol_published_date) over (partition by procedure_Id, protocol_number, created_date) max_published_date,
+                                max(session_type) over (partition by procedure_Id, protocol_number, created_date,protocol_published_date) max_session_type
+                        from d_commission_session@eaist_mos_shard com 
+                        join (select METHOD_OF_SUPPLIER_ID, id from D_PROCEDURE_ENTITY@eaist_mos_shard)  pe on com.procedure_id=pe.id
+                        and ((pe.METHOD_OF_SUPPLIER_ID=1 and com.session_type in (2,3)) or
+                             (pe.METHOD_OF_SUPPLIER_ID=2 and com.session_type in (5)) or
+                             (pe.METHOD_OF_SUPPLIER_ID=5 and com.session_type in (12)) or
+                             (pe.METHOD_OF_SUPPLIER_ID=6 and com.session_type in (15)))
+                        where com.session_type not in (1,18) and com.deleted_date is null
+                        ) where 
+                            protocol_number= max_protocol and created_date=max_created_date and (max_published_date=protocol_published_date or (session_type=max_session_type))) not_ea_oos
                     ON not_ea_oos.procedure_id=pe.id
                     LEFT JOIN (SELECT distinct lv.joint_auction, pl.PROCEDURE_ENTITY_ID FROM D_PROCEDURE_LOT_ENTRY@EAIST_MOS_SHARD pl
                                         JOIN (select id , joint_auction from d_lot_version@eaist_mos_shard where deleted_date IS NULL ) lv 
@@ -2841,7 +2855,7 @@ END;#';
     rec_array(idx).description := 'Ценовое предложение участника';
     rec_array(idx).execute_order := idx * 100;
     rec_array(idx).id_data_source := 2;
-    rec_array(idx).is_actual := 1;
+    rec_array(idx).is_actual := 0;
     rec_array(idx).sql_text := start_str || q'#
          INSERT INTO REPORTS.T_MEMBER_BID (ID,
                                            LOT_MEMBER_ID,
@@ -4177,7 +4191,7 @@ END;#';
     rec_array(idx).description := 'Контракт';
     rec_array(idx).execute_order := idx * 100;
     rec_array(idx).id_data_source := 2;
-    rec_array(idx).is_actual := 1;
+    rec_array(idx).is_actual := 0;
     rec_array(idx).sql_text := start_str || q'#
         INSERT INTO REPORTS.T_CONTRACT (ID,
                                          NAME,
