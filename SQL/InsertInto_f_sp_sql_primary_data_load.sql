@@ -95,8 +95,11 @@ END;#';
     rec_array(idx).id_data_source := 1;
     rec_array(idx).is_actual := 1;
     rec_array(idx).sql_text := start_str || q'#
-        insert into REPORTS.SP_ORGANIZATION(ID,ID_PARENT,INN,KPP, OPEN_DATE_D,ORGANIZATION_TYPE,FULL_NAME,SHORT_NAME,ID_DATA_SOURCE,VERSION_DATE,IS_CUSTOMER,IS_SUPPLIER,ENTITY_ID,FORMATTED_NAME, CONNECT_LEVEL) 
-		select o.*,level from (
+  insert into REPORTS.SP_ORGANIZATION(ID,ID_PARENT,INN,KPP, OPEN_DATE_D,ORGANIZATION_TYPE,FULL_NAME,SHORT_NAME,ID_DATA_SOURCE,VERSION_DATE,IS_CUSTOMER,IS_SUPPLIER,ENTITY_ID,FORMATTED_NAME, CONNECT_LEVEL,IS_SMP,address,
+  ogrn,phone,email) 
+		select o.ID, o.PARENT_ID, o.INN, o.KPP, o.DATE_START, o.COMPANY_TYPE, o.FULL_NAME, o.NAME, V_ID_DATA_SOURCE, V_VERSION_DATE, o.IS_CUSTOMER, o.IS_SUPPLIER, o.entity_id, o.FORMATTED_NAME, level, 
+    nvl(o.flag_is_smallbusiness,0) IS_SMP, o.full_address, o.ogrn, o.phone, o.email
+  from (
                             SELECT curr.ID,
                               curr.PARENT_ID,
                               curr.INN,
@@ -105,17 +108,21 @@ END;#';
                               curr.COMPANY_TYPE,
                               curr.FULL_NAME,
                               curr.NAME,
-                              V_ID_DATA_SOURCE,
-                              V_VERSION_DATE,
                               case when company_type=3 then 1 else 0 end as IS_CUSTOMER,
                               case when company_type in (1,2) then 1 else 0 end as IS_SUPPLIER,
                               curr.entity_id,
-                              FORMATE_NAME(FULL_NAME) as FORMATTED_NAME
-                             FROM enterprise@tkdbn1 curr,
-                                  (  SELECT entity_id, MAX (t.date_start) max_date, COUNT (*) cnt
+                              FORMATE_NAME(FULL_NAME) as FORMATTED_NAME,
+                              curr.flag_is_smallbusiness,
+                              a.full_address,
+                              curr.ogrn,
+                              curr.phone,
+                              curr.email
+                             FROM enterprise@tkdbn1 curr
+                             JOIN  (  SELECT entity_id, MAX (t.date_start) max_date, COUNT (*) cnt
                                        FROM enterprise@tkdbn1 t
-                                   GROUP BY entity_id) mv
-                              WHERE curr.entity_id = mv.entity_id AND curr.date_start = mv.max_date) o
+                                   GROUP BY entity_id) mv ON curr.entity_id = mv.entity_id AND curr.date_start = mv.max_date
+                             LEFT JOIN address@tkdbn1 a ON curr.address_fact_id=a.id
+                              ) o
           connect by prior o.entity_id=o.parent_id
           start with o.parent_id is null;
 
@@ -159,7 +166,7 @@ END;#';
                     select id,0,regexp_replace(complex_name,'^[^[:alpha:]]{1,}',''),regexp_replace(complex_name,'^[^[:alpha:]]{1,}',''),2,null, null, null,null,null,V_ID_DATA_SOURCE ID_DATA_SOURCE,V_VERSION_DATE VERSION_DATE,to_char(id) key_sort
                         from sp_complex where ID_DATA_SOURCE=V_ID_DATA_SOURCE and VERSION_DATE=V_VERSION_DATE
                      union all
-                    select v.id,v.id_complex,v.grbs,v.grbs,3,org.inn,org.kpp, open_date_d, null,null,V_ID_DATA_SOURCE ID_DATA_SOURCE,V_VERSION_DATE,v.grbs key_sort
+                    select v.id,v.id_complex,v.grbs,v.grbs,3,org.inn,org.kpp, open_date_d, org.is_smp,null,V_ID_DATA_SOURCE ID_DATA_SOURCE,V_VERSION_DATE,v.grbs key_sort
                          from (select distinct id,grbs,id_complex from sp_department where ID_DATA_SOURCE=V_ID_DATA_SOURCE and VERSION_DATE=V_VERSION_DATE) v
                          join sp_organization org on v.id=org.id and org.id_data_source=V_ID_DATA_SOURCE and ORG.VERSION_DATE=V_VERSION_DATE
                      union all
@@ -640,6 +647,185 @@ END;#';
               on (1=1)
               when matched then
               update set a.inn=b.inn,a.kpp=b.kpp where id_data_source=V_ID_DATA_SOURCE and version_date=V_VERSION_DATE and id=69801;
+
+    -- Привязка кол-ва обработанных строк
+    :V_ROWCOUNT := SQL%ROWCOUNT;
+
+END;#';
+
+    -- SP_COMPLEX [PURCHASE_SMALL]
+    idx := idx + 1;
+    rec_array(idx).table_name := 'SP_COMPLEX';
+    rec_array(idx).sql_name := 'SP_COMPLEX [PURCHASE_SMALL]';
+    rec_array(idx).description := 'Справочник комплексов';
+    rec_array(idx).execute_order := idx * 100;
+    rec_array(idx).id_data_source := 4;
+    rec_array(idx).is_actual := 1;
+    rec_array(idx).sql_text := start_str || q'#
+       insert into reports.SP_COMPLEX(id,complex_name,id_data_source,VERSION_DATE) select id, complex_name, V_ID_DATA_SOURCE, V_VERSION_DATE from complex@tkdbn1;
+
+    -- Привязка кол-ва обработанных строк
+    :V_ROWCOUNT := SQL%ROWCOUNT;
+
+END;#';
+
+    -- SP_DEPARTMENT [PURCHASE_SMALL]
+    idx := idx + 1;
+    rec_array(idx).table_name := 'SP_DEPARTMENT';
+    rec_array(idx).sql_name := 'SP_DEPARTMENT [PURCHASE_SMALL]';
+    rec_array(idx).description := 'Справочник ведомств';
+    rec_array(idx).execute_order := idx * 100;
+    rec_array(idx).id_data_source := 4;
+    rec_array(idx).is_actual := 1;
+    rec_array(idx).sql_text := start_str || q'#
+       insert into reports.SP_DEPARTMENT(ID                    
+                                                            ,GRBS                
+                                                            ,ID_COMPLEX          
+                                                            ,ID_ORGANIZATION          
+                                                            ,ID_DATA_SOURCE      
+                                                            ,VERSION_DATE) 
+            select id,grbs,complex_id,enterprise_entity_id, V_ID_DATA_SOURCE, V_VERSION_DATE from department@tkdbn1;
+
+    -- Привязка кол-ва обработанных строк
+    :V_ROWCOUNT := SQL%ROWCOUNT;
+
+END;#';
+
+    -- SP_ORGANIZATION [PURCHASE_SMALL]
+    idx := idx + 1;
+    rec_array(idx).table_name := 'SP_ORGANIZATION';
+    rec_array(idx).sql_name := 'SP_ORGANIZATION [PURCHASE_SMALL]';
+    rec_array(idx).description := 'Cправочник организаций';
+    rec_array(idx).execute_order := idx * 100;
+    rec_array(idx).id_data_source := 4;
+    rec_array(idx).is_actual := 1;
+    rec_array(idx).sql_text := start_str || q'#
+  insert into REPORTS.SP_ORGANIZATION(ID,ID_PARENT,INN,KPP, OPEN_DATE_D,ORGANIZATION_TYPE,FULL_NAME,SHORT_NAME,ID_DATA_SOURCE,VERSION_DATE,IS_CUSTOMER,IS_SUPPLIER,ENTITY_ID,FORMATTED_NAME, CONNECT_LEVEL,IS_SMP,address,
+  ogrn,phone,email) 
+		select o.ID, o.PARENT_ID, o.INN, o.KPP, o.DATE_START, o.COMPANY_TYPE, o.FULL_NAME, o.NAME, V_ID_DATA_SOURCE, V_VERSION_DATE, o.IS_CUSTOMER, o.IS_SUPPLIER, o.entity_id, o.FORMATTED_NAME, level, 
+    nvl(o.flag_is_smallbusiness,0) IS_SMP, o.full_address, o.ogrn, o.phone, o.email
+  from (
+                            SELECT curr.ID,
+                              curr.PARENT_ID,
+                              curr.INN,
+                              curr.KPP,
+                              curr.DATE_START,
+                              curr.COMPANY_TYPE,
+                              curr.FULL_NAME,
+                              curr.NAME,
+                              case when company_type=3 then 1 else 0 end as IS_CUSTOMER,
+                              case when company_type in (1,2) then 1 else 0 end as IS_SUPPLIER,
+                              curr.entity_id,
+                              FORMATE_NAME(FULL_NAME) as FORMATTED_NAME,
+                              curr.flag_is_smallbusiness,
+                              a.full_address,
+                              curr.ogrn,
+                              curr.phone,
+                              curr.email
+                             FROM enterprise@tkdbn1 curr
+                             JOIN  (  SELECT entity_id, MAX (t.date_start) max_date, COUNT (*) cnt
+                                       FROM enterprise@tkdbn1 t
+                                   GROUP BY entity_id) mv ON curr.entity_id = mv.entity_id AND curr.date_start = mv.max_date
+                             LEFT JOIN address@tkdbn1 a ON curr.address_fact_id=a.id
+                              ) o
+          connect by prior o.entity_id=o.parent_id
+          start with o.parent_id is null;
+
+    -- Привязка кол-ва обработанных строк
+    :V_ROWCOUNT := SQL%ROWCOUNT;
+
+END;#';
+
+    -- SP_ORGANIZATION - UPDATE [PURCHASE_SMALL]
+    idx := idx + 1;
+    rec_array(idx).table_name := 'SP_ORGANIZATION';
+    rec_array(idx).sql_name := 'SP_ORGANIZATION - UPDATE [PURCHASE_SMALL]';
+    rec_array(idx).description := 'Блок update';
+    rec_array(idx).execute_order := idx * 100;
+    rec_array(idx).id_data_source := 4;
+    rec_array(idx).is_actual := 1;
+    rec_array(idx).sql_text := start_str || q'#
+          update sp_organization set id=entity_id where ID_DATA_SOURCE=V_ID_DATA_SOURCE and VERSION_DATE = V_VERSION_DATE;
+
+    -- Привязка кол-ва обработанных строк
+    :V_ROWCOUNT := SQL%ROWCOUNT;
+
+END;#';
+
+    -- SP_CUSTOMER [PURCHASE_SMALL]
+    idx := idx + 1;
+    rec_array(idx).table_name := 'SP_CUSTOMER';
+    rec_array(idx).sql_name := 'SP_CUSTOMER [PURCHASE_SMALL]';
+    rec_array(idx).description := 'Справочник заказчиков';
+    rec_array(idx).execute_order := idx * 100;
+    rec_array(idx).id_data_source := 4;
+    rec_array(idx).is_actual := 1;
+    rec_array(idx).sql_text := start_str || q'#
+       insert into SP_CUSTOMER (ID,ID_PARENT,FULL_NAME,SHORT_NAME,CONNECT_LEVEL,INN,KPP, OPEN_DATE_D,IS_SMP,SPZ_CODE, ID_DATA_SOURCE,VERSION_DATE,S_KEY_SORT, FORMATTED_NAME )
+            select ID,ID_PARENT,FULL_NAME,SHORT_NAME,CONNECT_LEVEL,INN,KPP, OPEN_DATE_D,IS_SMP,SPZ_CODE, ID_DATA_SOURCE,VERSION_DATE,S_KEY_SORT,
+            FORMATE_NAME(FULL_NAME) from
+              (  select cust.*,rownum s_key_sort from 
+                 (
+                    select 0 ID,null ID_PARENT,'Москва' FULL_NAME,'Москва' SHORT_NAME,1 CONNECT_LEVEL,null INN,null KPP, null OPEN_DATE_D, null IS_SMP,null SPZ_CODE,V_ID_DATA_SOURCE ID_DATA_SOURCE,V_VERSION_DATE VERSION_DATE, '0' key_sort from dual
+                     union all
+                    select id,0,regexp_replace(complex_name,'^[^[:alpha:]]{1,}',''),regexp_replace(complex_name,'^[^[:alpha:]]{1,}',''),2,null, null, null,null,null,V_ID_DATA_SOURCE ID_DATA_SOURCE,V_VERSION_DATE VERSION_DATE,to_char(id) key_sort
+                        from sp_complex where ID_DATA_SOURCE=V_ID_DATA_SOURCE and VERSION_DATE=V_VERSION_DATE
+                     union all
+                    select v.id,v.id_complex,v.grbs,v.grbs,3,org.inn,org.kpp, open_date_d, org.is_smp,null,V_ID_DATA_SOURCE ID_DATA_SOURCE,V_VERSION_DATE,v.grbs key_sort
+                         from (select distinct id,grbs,id_complex from sp_department where ID_DATA_SOURCE=V_ID_DATA_SOURCE and VERSION_DATE=V_VERSION_DATE) v
+                         join sp_organization org on v.id=org.id and org.id_data_source=V_ID_DATA_SOURCE and ORG.VERSION_DATE=V_VERSION_DATE
+                     union all
+                    select uchr.id,uchr.vedom_id,uchr.FULL_NAME,uchr.SHORT_NAME,4 conn_level,uchr.INN,uchr.KPP, open_date_d, uchr.IS_SMP,uchr.SPZ_CODE,V_ID_DATA_SOURCE ID_DATA_SOURCE,V_VERSION_DATE VERSION_DATE,uchr.FULL_NAME key_sort
+                         from (select o.id,d.id vedom_id,d.id_complex,o.FULL_NAME,o.SHORT_NAME,o.INN,o.KPP, o.open_date_d,o.IS_SMP,o.SPZ_CODE,o.ID_DATA_SOURCE,o.VERSION_DATE from (select * from sp_department where id!=id_organization) d
+                         join sp_organization o on d.id_organization=o.id and d.version_date=V_VERSION_DATE and O.VERSION_DATE=V_VERSION_DATE and D.ID_DATA_SOURCE=V_ID_DATA_SOURCE and o.ID_DATA_SOURCE=V_ID_DATA_SOURCE) uchr
+                ) cust
+                connect by prior cust.id=cust.id_parent
+                start with cust.id=0
+                order siblings by key_sort  );
+
+    -- Привязка кол-ва обработанных строк
+    :V_ROWCOUNT := SQL%ROWCOUNT;
+
+END;#';
+
+    -- SP_CUSTOMER - GRBS [PURCHASE_SMALL]
+    idx := idx + 1;
+    rec_array(idx).table_name := 'SP_CUSTOMER';
+    rec_array(idx).sql_name := 'SP_CUSTOMER - GRBS [PURCHASE_SMALL]';
+    rec_array(idx).description := 'Простановка кодов ГРБС';
+    rec_array(idx).execute_order := idx * 100;
+    rec_array(idx).id_data_source := 4;
+    rec_array(idx).is_actual := 1;
+    rec_array(idx).sql_text := start_str || q'#
+        update sp_customer c set c.grbs_code=(select grbs_code from lnk_grbs_code_customer where id_customer=c.id and eaist=1)
+            where id_data_source=V_ID_DATA_SOURCE and version_date=V_VERSION_DATE;
+
+
+    -- Привязка кол-ва обработанных строк
+    :V_ROWCOUNT := SQL%ROWCOUNT;
+
+END;#';
+
+    -- LNK_CONNECTION_ORGANIZATION [PURCHASE_SMALL]
+    idx := idx + 1;
+    rec_array(idx).table_name := 'LNK_CONNECTION_ORGANIZATION';
+    rec_array(idx).sql_name := 'LNK_CONNECTION_ORGANIZATION [PURCHASE_SMALL]';
+    rec_array(idx).description := 'Рассчетные связи родителей организаций с детьми всех уровней';
+    rec_array(idx).execute_order := idx * 100;
+    rec_array(idx).id_data_source := 4;
+    rec_array(idx).is_actual := 1;
+    rec_array(idx).sql_text := start_str || q'#
+        for j in (
+          select * from sp_customer where ID_DATA_SOURCE = V_ID_DATA_SOURCE and version_date = V_VERSION_DATE
+        ) 
+        loop
+          insert into LNK_CONNECTION_ORGANIZATION (id,id_child,ID_DATA_SOURCE,parent_level,child_LEVEL,VERSION_DATE)
+            SELECT  j.id, id as child_id, ID_DATA_SOURCE,j.connect_level parent_level,level as child_LEVEL, VERSION_DATE
+            FROM   sp_customer o    
+            START WITH    id = j.id and ID_DATA_SOURCE=j.ID_DATA_SOURCE and version_date=j.version_date
+            CONNECT BY     id_parent=PRIOR id and ID_DATA_SOURCE=prior ID_DATA_SOURCE and version_date=prior version_date;
+        end loop;
+        delete from  LNK_CONNECTION_ORGANIZATION where id=id_child;
 
     -- Привязка кол-ва обработанных строк
     :V_ROWCOUNT := SQL%ROWCOUNT;
@@ -3977,7 +4163,7 @@ END;#';
     rec_array(idx).description := 'Контракт';
     rec_array(idx).execute_order := idx * 100;
     rec_array(idx).id_data_source := 2;
-    rec_array(idx).is_actual := 0;
+    rec_array(idx).is_actual := 1;
     rec_array(idx).sql_text := start_str || q'#
         INSERT INTO REPORTS.T_CONTRACT (ID,
                                          NAME,
@@ -7164,152 +7350,6 @@ END;#';
 
 END;#';
 
-    -- SP_COMPLEX [PURCHASE_SMALL]
-    idx := idx + 1;
-    rec_array(idx).table_name := 'SP_COMPLEX';
-    rec_array(idx).sql_name := 'SP_COMPLEX [PURCHASE_SMALL]';
-    rec_array(idx).description := 'Справочник комплексов';
-    rec_array(idx).execute_order := idx * 100;
-    rec_array(idx).id_data_source := 4;
-    rec_array(idx).is_actual := 1;
-    rec_array(idx).sql_text := start_str || q'#
-       insert into reports.SP_COMPLEX(id,complex_name,id_data_source,VERSION_DATE) select id, complex_name, V_ID_DATA_SOURCE, V_VERSION_DATE from complex@tkdbn1;
-
-    -- Привязка кол-ва обработанных строк
-    :V_ROWCOUNT := SQL%ROWCOUNT;
-
-END;#';
-
-    -- SP_DEPARTMENT [PURCHASE_SMALL]
-    idx := idx + 1;
-    rec_array(idx).table_name := 'SP_DEPARTMENT';
-    rec_array(idx).sql_name := 'SP_DEPARTMENT [PURCHASE_SMALL]';
-    rec_array(idx).description := 'Справочник ведомств';
-    rec_array(idx).execute_order := idx * 100;
-    rec_array(idx).id_data_source := 4;
-    rec_array(idx).is_actual := 1;
-    rec_array(idx).sql_text := start_str || q'#
-       insert into reports.SP_DEPARTMENT(ID                    
-                                                            ,GRBS                
-                                                            ,ID_COMPLEX          
-                                                            ,ID_ORGANIZATION          
-                                                            ,ID_DATA_SOURCE      
-                                                            ,VERSION_DATE) 
-            select id,grbs,complex_id,enterprise_entity_id, V_ID_DATA_SOURCE, V_VERSION_DATE from department@tkdbn1;
-
-    -- Привязка кол-ва обработанных строк
-    :V_ROWCOUNT := SQL%ROWCOUNT;
-
-END;#';
-
-    -- SP_ORGANIZATION [PURCHASE_SMALL]
-    idx := idx + 1;
-    rec_array(idx).table_name := 'SP_ORGANIZATION';
-    rec_array(idx).sql_name := 'SP_ORGANIZATION [PURCHASE_SMALL]';
-    rec_array(idx).description := 'Cправочник организаций';
-    rec_array(idx).execute_order := idx * 100;
-    rec_array(idx).id_data_source := 4;
-    rec_array(idx).is_actual := 1;
-    rec_array(idx).sql_text := start_str || q'#
-        insert into REPORTS.SP_ORGANIZATION(ID,ID_PARENT,INN,KPP,ORGANIZATION_TYPE,FULL_NAME,SHORT_NAME,ID_DATA_SOURCE,VERSION_DATE,IS_CUSTOMER,IS_SUPPLIER,ENTITY_ID,FORMATTED_NAME, address, ogrn, phone,email, CONNECT_LEVEL ) 
-            select o.*,level from (
-                            SELECT curr.ID,
-                              curr.PARENT_ID,
-                              curr.INN,
-                              curr.KPP,
-                              curr.COMPANY_TYPE,
-                              curr.FULL_NAME,
-                              curr.NAME,
-                              V_ID_DATA_SOURCE,
-                              V_VERSION_DATE,
-                              case when company_type=3 then 1 else 0 end as IS_CUSTOMER,
-                              case when company_type in (1,2) then 1 else 0 end as IS_SUPPLIER,
-                              curr.entity_id,
-                              FORMATE_NAME(FULL_NAME) as FORMATTED_NAME,
-                              a.full_address,
-                              curr.ogrn,
-                              curr.phone,
-                              curr.email
-                             FROM enterprise@tkdbn1 curr,
-                                  (  SELECT entity_id, MAX (t.date_start) max_date, COUNT (*) cnt
-                                       FROM enterprise@tkdbn1 t
-                                   GROUP BY entity_id) mv, address@tkdbn1 a
-                              WHERE curr.entity_id = mv.entity_id AND curr.date_start = mv.max_date and curr.address_fact_id=a.id) o
-          connect by prior o.entity_id=o.parent_id
-          start with o.parent_id is null;
-
-    -- Привязка кол-ва обработанных строк
-    :V_ROWCOUNT := SQL%ROWCOUNT;
-
-END;#';
-
-    -- SP_ORGANIZATION - UPDATE [PURCHASE_SMALL]
-    idx := idx + 1;
-    rec_array(idx).table_name := 'SP_ORGANIZATION';
-    rec_array(idx).sql_name := 'SP_ORGANIZATION - UPDATE [PURCHASE_SMALL]';
-    rec_array(idx).description := 'Блок update';
-    rec_array(idx).execute_order := idx * 100;
-    rec_array(idx).id_data_source := 4;
-    rec_array(idx).is_actual := 1;
-    rec_array(idx).sql_text := start_str || q'#
-          update sp_organization set id=entity_id where ID_DATA_SOURCE=V_ID_DATA_SOURCE and VERSION_DATE = V_VERSION_DATE;
-
-    -- Привязка кол-ва обработанных строк
-    :V_ROWCOUNT := SQL%ROWCOUNT;
-
-END;#';
-
-    -- SP_CUSTOMER [PURCHASE_SMALL]
-    idx := idx + 1;
-    rec_array(idx).table_name := 'SP_CUSTOMER';
-    rec_array(idx).sql_name := 'SP_CUSTOMER [PURCHASE_SMALL]';
-    rec_array(idx).description := 'Справочник заказчиков';
-    rec_array(idx).execute_order := idx * 100;
-    rec_array(idx).id_data_source := 4;
-    rec_array(idx).is_actual := 1;
-    rec_array(idx).sql_text := start_str || q'#
-        insert into SP_CUSTOMER (ID,ID_PARENT,FULL_NAME,SHORT_NAME,CONNECT_LEVEL,INN,KPP,IS_SMP,SPZ_CODE, ID_DATA_SOURCE,VERSION_DATE,S_KEY_SORT, FORMATTED_NAME )
-            select ID,ID_PARENT,FULL_NAME,SHORT_NAME,CONNECT_LEVEL,INN,KPP,IS_SMP,SPZ_CODE, ID_DATA_SOURCE,VERSION_DATE,S_KEY_SORT,
-            FORMATE_NAME(FULL_NAME) from
-              (  select cust.*,rownum s_key_sort from 
-                 (
-                    select 0 ID,null ID_PARENT,'Москва' FULL_NAME,'Москва' SHORT_NAME,1 CONNECT_LEVEL,null INN,null KPP,null IS_SMP,null SPZ_CODE,V_ID_DATA_SOURCE ID_DATA_SOURCE,V_VERSION_DATE VERSION_DATE, '0' key_sort from dual
-                     union all
-                    select id,0,regexp_replace(complex_name,'^[^[:alpha:]]{1,}',''),regexp_replace(complex_name,'^[^[:alpha:]]{1,}',''),2,null,null,null,null,V_ID_DATA_SOURCE ID_DATA_SOURCE,V_VERSION_DATE VERSION_DATE,to_char(id) key_sort
-                        from sp_complex where ID_DATA_SOURCE=V_ID_DATA_SOURCE and VERSION_DATE=V_VERSION_DATE
-                     union all
-                    select v.id,v.id_complex,v.grbs,v.grbs,3,org.inn,org.kpp,null,null,V_ID_DATA_SOURCE ID_DATA_SOURCE,V_VERSION_DATE,v.grbs key_sort
-                         from (select distinct id,grbs,id_complex from sp_department where ID_DATA_SOURCE=V_ID_DATA_SOURCE and VERSION_DATE=V_VERSION_DATE) v
-                         join sp_organization org on v.id=org.id and org.id_data_source=V_ID_DATA_SOURCE and ORG.VERSION_DATE=V_VERSION_DATE
-                     union all
-                    select uchr.id,uchr.vedom_id,uchr.FULL_NAME,uchr.SHORT_NAME,4 conn_level,uchr.INN,uchr.KPP,uchr.IS_SMP,uchr.SPZ_CODE,V_ID_DATA_SOURCE ID_DATA_SOURCE,V_VERSION_DATE VERSION_DATE,uchr.FULL_NAME key_sort
-                         from (select o.id,d.id vedom_id,d.id_complex,o.FULL_NAME,o.SHORT_NAME,o.INN,o.KPP,o.IS_SMP,o.SPZ_CODE,o.ID_DATA_SOURCE,o.VERSION_DATE from (select * from sp_department where id!=id_organization) d
-                         join sp_organization o on d.id_organization=o.id and d.version_date=V_VERSION_DATE and O.VERSION_DATE=V_VERSION_DATE and D.ID_DATA_SOURCE=V_ID_DATA_SOURCE and o.ID_DATA_SOURCE=V_ID_DATA_SOURCE) uchr
-                ) cust
-                connect by prior cust.id=cust.id_parent
-                start with cust.id=0
-                order siblings by key_sort  );
-
-    -- Привязка кол-ва обработанных строк
-    :V_ROWCOUNT := SQL%ROWCOUNT;
-
-END;#';
-
-    -- SP_CUSTOMER - GRBS [PURCHASE_SMALL]
-    idx := idx + 1;
-    rec_array(idx).table_name := 'SP_CUSTOMER';
-    rec_array(idx).sql_name := 'SP_CUSTOMER - GRBS [PURCHASE_SMALL]';
-    rec_array(idx).description := 'Простановка кодов ГРБС';
-    rec_array(idx).execute_order := idx * 100;
-    rec_array(idx).id_data_source := 4;
-    rec_array(idx).is_actual := 1;
-    rec_array(idx).sql_text := start_str || q'#
-    update sp_customer c set c.grbs_code=(select grbs_code from lnk_grbs_code_customer where id_customer=c.id and eaist=1) where id_data_source=V_ID_DATA_SOURCE and version_date=V_VERSION_DATE;
-
-    -- Привязка кол-ва обработанных строк
-    :V_ROWCOUNT := SQL%ROWCOUNT;
-
-END;#';
 
     -- SP_CUSTOMER_RATING [PURCHASE_SMALL]
     idx := idx + 1;
@@ -7336,32 +7376,6 @@ END;#';
                       from 
                       N_CUSTOMER_RATING@EAIST_MOS_NSI
                       where DELETED_DATE is null;
-
-    -- Привязка кол-ва обработанных строк
-    :V_ROWCOUNT := SQL%ROWCOUNT;
-
-END;#';
-
-    -- LNK_CONNECTION_ORGANIZATION [PURCHASE_SMALL]
-    idx := idx + 1;
-    rec_array(idx).table_name := 'LNK_CONNECTION_ORGANIZATION';
-    rec_array(idx).sql_name := 'LNK_CONNECTION_ORGANIZATION [PURCHASE_SMALL]';
-    rec_array(idx).description := 'Рассчетные связи родителей организаций с детьми всех уровней';
-    rec_array(idx).execute_order := idx * 100;
-    rec_array(idx).id_data_source := 4;
-    rec_array(idx).is_actual := 1;
-    rec_array(idx).sql_text := start_str || q'#
-        for j in (
-          select * from sp_customer where ID_DATA_SOURCE = V_ID_DATA_SOURCE and version_date = V_VERSION_DATE
-        ) 
-        loop
-          insert into LNK_CONNECTION_ORGANIZATION (id,id_child,ID_DATA_SOURCE,parent_level,child_LEVEL,VERSION_DATE)
-            SELECT  j.id, id as child_id, ID_DATA_SOURCE,j.connect_level parent_level,level as child_LEVEL, VERSION_DATE
-            FROM   sp_customer o    
-            START WITH    id = j.id and ID_DATA_SOURCE=j.ID_DATA_SOURCE and version_date=j.version_date
-            CONNECT BY     id_parent=PRIOR id and ID_DATA_SOURCE=prior ID_DATA_SOURCE and version_date=prior version_date;
-        end loop;
-        delete from  LNK_CONNECTION_ORGANIZATION where id=id_child;
 
     -- Привязка кол-ва обработанных строк
     :V_ROWCOUNT := SQL%ROWCOUNT;
