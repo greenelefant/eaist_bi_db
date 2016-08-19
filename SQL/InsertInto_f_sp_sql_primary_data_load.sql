@@ -5485,19 +5485,19 @@ END;#';
                                            VERSION_DATE)
           select distinct 
             win.ID||4||(CASE WHEN l.joint_auction=1 or l.included_joint_auction=1 then l.id end) winid, 
-            win.ID||4||(CASE WHEN l.joint_auction=1 or l.included_joint_auction=1 then l.id end), 
+            d.ea_id||4||(CASE WHEN l.joint_auction=1 or l.included_joint_auction=1 then l.id end), 
             d.APP_DATE, 
             win.PRICE, 
             V_ID_DATA_SOURCE id_Data_source, 
-            V_VERSION_DATE version_date 
-          from (select win.*, t.id tender_id, rank() over (partition by journal_number, oos_reg_number order by price, added_at desc) rnk
-                from d_ea_winner@eaist_mos_shard win 
-                join t_tender t on win.procedure_id=t.entity_id and t.id_data_source=V_ID_DATA_SOURCE and t.version_date=V_VERSION_DATE) win
-          join (select id, tender_Id, joint_auction, included_joint_auction from t_lot where version_date= V_VERSION_DATE and id_data_source= V_ID_DATA_SOURCE) l on l.tender_id=win.tender_id and win.rnk=1
-          left join (select journal_number, oos_reg_number, min(app_date) app_date 
-                     from D_EA_APPLICATION@eaist_mos_shard
-                     group by journal_number, oos_reg_number) d
-          on d.journal_number=win.journal_number and d.oos_reg_number=win.oos_reg_number;
+            V_VERSION_DATE version_date
+          from (select distinct journal_number, oos_reg_number, max(admitted_second) admitted_second, max(admitted) admitted, max(id) ea_id, min(app_date) app_date
+                  from D_EA_APPLICATION@eaist_mos_shard
+                group by journal_number, oos_reg_number) d
+          join (select win.*, t.id tender_id, rank() over (partition by journal_number, oos_reg_number order by price, added_at desc) rnk
+              from d_ea_winner@eaist_mos_shard win 
+              join t_tender t on win.procedure_id=t.entity_id and t.id_data_source=V_ID_DATA_SOURCE and t.version_date=V_VERSION_DATE) win
+          on d.journal_number=win.journal_number and d.oos_reg_number=win.oos_reg_number
+          join (select id, tender_Id, joint_auction, included_joint_auction from t_lot where version_date= V_VERSION_DATE and id_data_source= V_ID_DATA_SOURCE) l on l.tender_id=win.tender_id and win.rnk=1;
     -- Привязка кол-ва обработанных строк
     :V_ROWCOUNT := SQL%ROWCOUNT;
 
