@@ -5432,7 +5432,7 @@ INSERT INTO REPORTS.T_LOT_MEMBER (ID,
                                            GRBS)
 
 select  distinct
-              d.ea_ID||41||(CASE WHEN l.joint_auction=1 or l.included_joint_auction=1 then l.id end) id, 
+              d.ea_ID||4||(CASE WHEN l.joint_auction=1 or l.included_joint_auction=1 then l.id end) id, 
               l.id lot_id, 
               win.participant_id, 
               d.journal_number REQUEST_NUMBER, 
