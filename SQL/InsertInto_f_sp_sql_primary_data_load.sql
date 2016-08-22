@@ -8712,6 +8712,42 @@ END;#';
 
 END;#';
 
+-- SP_PRICING_METHOD
+    idx := idx + 1;
+    rec_array(idx).table_name := 'SP_PRICING_METHOD';
+    rec_array(idx).sql_name := 'SP_PRICING_METHOD [EAIST2]';
+    rec_array(idx).description := 'Способы определения НМЦ';
+    rec_array(idx).execute_order := idx * 100;
+    rec_array(idx).id_data_source := 1;
+    rec_array(idx).is_actual := 1;
+    rec_array(idx).sql_text := start_str || q'#
+	insert into SP_PRICING_METHOD ()ID, NAME, code, id_Data_source, version_date)
+	select ID, NAME, code, V_ID_DATA_SOURCE, V_VERSION_DATE from N_PRICING_METHOD@eaist_mos_nsi where deleted_date is null;
+                                              
+
+		-- Привязка кол-ва обработанных строк
+		:V_ROWCOUNT := sql%rowcount;
+
+END;#';
+
+-- T_NMC
+    idx := idx + 1;
+    rec_array(idx).table_name := 'T_NMC';
+    rec_array(idx).sql_name := 'T_NMC [EAIST2]';
+    rec_array(idx).description := 'НМЦ';
+    rec_array(idx).execute_order := idx * 100;
+    rec_array(idx).id_data_source := 1;
+    rec_array(idx).is_actual := 1;
+    rec_array(idx).sql_text := start_str || q'#
+	insert into T_NMC (id, spgz_id, method, value, valute, nds, okei_id,detail_spec_id,calc_date, amount, ikz, ID_DATA_SOURCE, VERSION_DATE)
+	select id, spgz_id, method, value, valute, nds, okei_id,detail_spec_id,calc_date, amount, ikz, V_ID_DATA_SOURCE, V_VERSION_DATE from D_NMC_ENTITY@eaist_mos_shard;
+                                              
+
+		-- Привязка кол-ва обработанных строк
+		:V_ROWCOUNT := sql%rowcount;
+
+END;#';
+
 -- SP_CUSTOMERS_TREE
     idx := idx + 1;
     rec_array(idx).table_name := 'SP_CUSTOMERS_TREE';
