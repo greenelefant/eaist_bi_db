@@ -2335,7 +2335,7 @@ SELECT pv.ID as Id1,
                            PL.JOINT_AUCTION AS IS_UNION_TRADE,
                            CASE 
                             WHEN pe.METHOD_OF_SUPPLIER_ID=4 THEN
-                              CASE WHEN PV.STATUS_ID=18 THEN oos.protocol_date WHEN have_win.place is not null THEN oos.lim_protocol_date END
+                              CASE WHEN PV.STATUS_ID=18 or have_win.procedure_entity_id is not null THEN oos.protocol_date ELSE oos.lim_protocol_date END
                             ELSE
                               CASE 
                                 WHEN PV.STATUS_ID=18 THEN not_ea_oos_win.protocol_created_date
@@ -2431,7 +2431,7 @@ SELECT pv.ID as Id1,
                                         PROTOCOL_DATE,
                                         PROCEDURE_ENTITY_ID,
                                         max(PROTOCOL_DATE)  OVER (PARTITION BY PROCEDURE_ENTITY_ID) MAX_PROTOCOL_DATE,
-                                        max(PUBLISH_DATE)  OVER (PARTITION BY PROCEDURE_ENTITY_ID,PROTOCOL_DATE) MAX_PUBLISH_DATE
+                                        max(PUBLISH_DATE)  OVER (PARTITION BY PROCEDURE_ENTITY_ID) MAX_PUBLISH_DATE
                                        FROM D_OOS_FTP_PROTOCOL@EAIST_MOS_SHARD) where PROTOCOL_DATE=MAX_PROTOCOL_DATE and PUBLISH_DATE=MAX_PUBLISH_DATE) oos_nolim
                               left join
                               (SELECT DISTINCT PUBLISH_DATE, PROTOCOL_DATE, PROCEDURE_ENTITY_ID FROM
@@ -2439,7 +2439,7 @@ SELECT pv.ID as Id1,
                                         PROTOCOL_DATE,
                                         PROCEDURE_ENTITY_ID,
                                         max(CASE WHEN PROTOCOL_TYPE in ('PPI', 'PPN') THEN PROTOCOL_DATE ELSE NULL END)  OVER (PARTITION BY PROCEDURE_ENTITY_ID) MAX_LIM_PROTOCOL_DATE,
-                                        max(CASE WHEN PROTOCOL_TYPE in ('PPI', 'PPN') THEN PUBLISH_DATE ELSE NULL END)  OVER (PARTITION BY PROCEDURE_ENTITY_ID,PROTOCOL_DATE) MAX_LIM_PUBLISH_DATE
+                                        max(CASE WHEN PROTOCOL_TYPE in ('PPI', 'PPN') THEN PUBLISH_DATE ELSE NULL END)  OVER (PARTITION BY PROCEDURE_ENTITY_ID) MAX_LIM_PUBLISH_DATE
                                        FROM D_OOS_FTP_PROTOCOL@EAIST_MOS_SHARD) where PROTOCOL_DATE=MAX_LIM_PROTOCOL_DATE and PUBLISH_DATE=MAX_LIM_PUBLISH_DATE) oos_lim
                               on oos_nolim.PROCEDURE_ENTITY_ID=oos_lim.PROCEDURE_ENTITY_ID) oos
                     ON oos.PROCEDURE_ENTITY_ID = pe.ID
@@ -2480,9 +2480,29 @@ SELECT pv.ID as Id1,
                                 FROM d_procedure_status_history@eaist_mos_shard ver
                                 JOIN D_PROCEDURE_ENTITY@EAIST_MOS_SHARD ent
                                 ON ver.entity_id=ent.id) dates on dates.reg_number=pe.reg_number
-                    LEFT JOIN (select distinct place, de.id 
-                      from d_ea_winner@eaist_mos_shard  ew
-                      join D_PROCEDURE_ENTITY@eaist_mos_shard de on ew.oos_reg_number=de.reg_number and ew.place=1 ) have_win on have_win.id=pe.id        
+                    LEFT JOIN (select distinct procedure_entity_id from (
+                              select procedure_Id procedure_entity_id, place from d_ea_winner@eaist_mos_shard
+                              union
+                              SELECT                           
+                                procedure_entity_id,                          
+                                row_number() over (partition by LOT_ID order by rank desc) PLACE                          
+                                FROM
+                                (
+                                SELECT DISTINCT 
+                                        b.lot_id,
+                                       nvl(ple.procedure_entity_id, ple1.procedure_entity_id) procedure_entity_id,
+                                       b.FINAL_RATING AS RANK
+                        
+                                  FROM D_BID@EAIST_MOS_SHARD b
+                                  JOIN D_LOT_VERSION@EAIST_MOS_SHARD LV on  LV.ENTITY_ID=B.LOT_ID
+                                  left JOIN D_PROCEDURE_LOT_ENTRY@EAIST_MOS_SHARD ple ON lv.ID = ple.LOT_ID AND is_actual = 1
+                                  left join 
+                                  (select lle.lot_id, procedure_entity_id, lot_num 
+                                      from (select id, lot_id, root_lot_id, max(id) over (partition by lot_id) max_id from d_lot_lot_entry@eaist_mos_shard  where is_actual = 1) lle --ищем связь совместных лотов с главными совместными лотами
+                                      left join d_procedure_lot_entry@eaist_mos_shard ple1 on lle.id=lle.max_id and ple1.lot_id = lle.root_lot_id and ple1.is_actual = 1 --ищем связь главных совместных лотов с процедурами
+                                    where PROCEDURE_ID IN (SELECT ID FROM D_PROCEDURE_VERSION@EAIST_MOS_SHARD WHERE deleted_date IS NULL)) ple1  
+                                  on lv.id = ple1.lot_id )
+                                  ) where place=1) have_win on have_win.procedure_entity_id=pe.id        
                                 
                     WHERE EXISTS (SELECT * FROM D_PROCEDURE_LOT_ENTRY@EAIST_MOS_SHARD pl
                       JOIN (SELECT l.ID, l.entity_id FROM D_LOT_VERSION@EAIST_MOS_SHARD l WHERE deleted_date IS NULL
@@ -5528,9 +5548,9 @@ END;#';
     rec_array(idx).id_data_source := 2;
     rec_array(idx).is_actual := 1;
     rec_array(idx).sql_text := start_str || q'#
-        INSERT INTO T_LOT_NMC_EXAMINATION (ID, LOT_ID, SEND_DATE, APPROVED_DATE, EXPECTED_EXAMINATION_DATE, CURRENT_STATE, EXPECTED_EXAMINATION_END_DATE, ID_DATA_SOURCE, version_date, GRBS, REG_NUMBER, NMC)
-		SELECT ex.ID, ex.LOT_ID, ex.SEND_DATE, ex.APPROVED_DATE, ex.EXPECTED_EXAMINATION_DATE, ex.CURRENT_STATE, ex.EXPECTED_EXAMINATION_END_DATE, V_ID_DATA_SOURCE ID_DATA_SOURCE, V_VERSION_DATE version_date, grbs_code, REG_NUMBER, NMC 
-		FROM (SELECT ID, LOT_ID, SEND_DATE, APPROVED_DATE, EXPECTED_EXAMINATION_DATE, CURRENT_STATE, EXPECTED_EXAMINATION_END_DATE, REG_NUMBER, NMC FROM D_LOT_NMC_EXAMINATION@eaist_mos_shard) ex
+        INSERT INTO T_LOT_NMC_EXAMINATION (ID, LOT_ID, SEND_DATE, APPROVED_DATE, EXPECTED_EXAMINATION_DATE, CURRENT_STATE, EXPECTED_EXAMINATION_END_DATE, ID_DATA_SOURCE, version_date, GRBS, REG_NUMBER, NMC, EXAMINATION_ORG_ID)
+		SELECT ex.ID, ex.LOT_ID, ex.SEND_DATE, ex.APPROVED_DATE, ex.EXPECTED_EXAMINATION_DATE, ex.CURRENT_STATE, ex.EXPECTED_EXAMINATION_END_DATE, V_ID_DATA_SOURCE ID_DATA_SOURCE, V_VERSION_DATE version_date, grbs_code, REG_NUMBER, NMC, EXAMINATION_ORG_ID 
+		FROM (SELECT ID, LOT_ID, SEND_DATE, APPROVED_DATE, EXPECTED_EXAMINATION_DATE, CURRENT_STATE, EXPECTED_EXAMINATION_END_DATE, REG_NUMBER, NMC, EXAMINATION_ORG_ID FROM D_LOT_NMC_EXAMINATION@eaist_mos_shard) ex
 		JOIN (SELECT * FROM T_LOT WHERE id_data_source=V_ID_DATA_SOURCE) lots ON lots.id_entity=ex.lot_id AND lots.version_date=V_VERSION_DATE AND lots.id_Data_source=V_ID_DATA_SOURCE
 		LEFT JOIN (SELECT lcag.id lnk_id, cust.grbs_code, lcag.version_date
 				  FROM LNK_CUSTOMERS_ALL_LEVEL lcag
