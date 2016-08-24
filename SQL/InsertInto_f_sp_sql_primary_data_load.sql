@@ -8718,7 +8718,7 @@ END;#';
     rec_array(idx).sql_name := 'SP_PRICING_METHOD [EAIST2]';
     rec_array(idx).description := 'Способы определения НМЦ';
     rec_array(idx).execute_order := idx * 100;
-    rec_array(idx).id_data_source := 1;
+    rec_array(idx).id_data_source := 2;
     rec_array(idx).is_actual := 1;
     rec_array(idx).sql_text := start_str || q'#
 	insert into SP_PRICING_METHOD ()ID, NAME, code, id_Data_source, version_date)
@@ -8736,7 +8736,7 @@ END;#';
     rec_array(idx).sql_name := 'T_NMC [EAIST2]';
     rec_array(idx).description := 'НМЦ';
     rec_array(idx).execute_order := idx * 100;
-    rec_array(idx).id_data_source := 1;
+    rec_array(idx).id_data_source := 2;
     rec_array(idx).is_actual := 1;
     rec_array(idx).sql_text := start_str || q'#
 	insert into T_NMC (id, spgz_id, method, value, valute, nds, okei_id,detail_spec_id,calc_date, amount, ikz, ID_DATA_SOURCE, VERSION_DATE)
