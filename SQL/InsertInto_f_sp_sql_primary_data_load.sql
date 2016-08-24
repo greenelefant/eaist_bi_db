@@ -8721,7 +8721,7 @@ END;#';
     rec_array(idx).id_data_source := 2;
     rec_array(idx).is_actual := 1;
     rec_array(idx).sql_text := start_str || q'#
-	insert into SP_PRICING_METHOD ()ID, NAME, code, id_Data_source, version_date)
+	insert into SP_PRICING_METHOD (ID, NAME, code, id_Data_source, version_date)
 	select ID, NAME, code, V_ID_DATA_SOURCE, V_VERSION_DATE from N_PRICING_METHOD@eaist_mos_nsi where deleted_date is null;
                                               
 
