@@ -2120,10 +2120,10 @@ END;#';
 
 END;#';
 
-    -- SP_OKDP [EAIST2]
+    -- SP_OKPD [EAIST2]
     idx := idx + 1;
-    rec_array(idx).table_name := 'SP_OKDP';
-    rec_array(idx).sql_name := 'SP_OKDP [EAIST2]';
+    rec_array(idx).table_name := 'SP_OKPD';
+    rec_array(idx).sql_name := 'SP_OKPD [EAIST2]';
     rec_array(idx).description := 'Справочник  ОКПД';
     rec_array(idx).execute_order := idx * 100;
     rec_array(idx).id_data_source := 2;
