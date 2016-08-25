@@ -2837,7 +2837,7 @@ END;#';
               FROM D_BID@EAIST_MOS_SHARD b
                    --JOIN  D_LOT_ENTITY@EAIST_MOS_SHARD le ON b.LOT_ID = le.ID
                    --JOIN (SELECT ID, ENTITY_ID FROM D_LOT_VERSION@EAIST_MOS_SHARD WHERE deleted_date IS NULL) lv ON lv.entity_id = le.ID
-                   JOIN t_lot LV on  LV.ID_ENTITY=B.LOT_ID AND LV.ID_DATA_SOURCE=V_ID_DATA_SOURCE AND LV.VERSION_DATE=V_VERSION_DATE
+                   JOIN t_lot LV on  LV.ID_ENTITY=B.LOT_ID AND LV.ID_DATA_SOURCE=V_ID_DATA_SOURCE AND LV.VERSION_DATE=V_VERSION_DATE-1
                   JOIN D_PROCEDURE_LOT_ENTRY@EAIST_MOS_SHARD ple ON lv.ID = ple.LOT_ID AND is_actual = 1 
                    LEFT JOIN (SELECT b.*,ROW_NUMBER () OVER (PARTITION BY b.PROCEDURE_VERSION_ID ORDER BY b.id DESC) rn FROM D_BID_REGISTRY@EAIST_MOS_SHARD b) br 
                    --Номер заявки по журналу учета заявок - для одной процедуры их несколько - баг данных, берем по max(id)
