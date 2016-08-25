@@ -1280,7 +1280,7 @@ END;#';
 
     -- GENERATE_TREE_CUSTOMERS [LOAD_ORG_JOINT]
     idx := idx + 1;
-    rec_array(idx).table_name := 'GENERATE_TREE_CUSTOMERS';
+    rec_array(idx).table_name := '';
     rec_array(idx).sql_name := 'GENERATE_TREE_CUSTOMERS [LOAD_ORG_JOINT]';
     rec_array(idx).description := 'Построение дерева';
     rec_array(idx).execute_order := idx * 100;
@@ -8617,7 +8617,7 @@ END;#';
 
 -- GENERATE_TREE_CUSTOMERS
     idx := idx + 1;
-    rec_array(idx).table_name := 'GENERATE_TREE_CUSTOMERS';
+    rec_array(idx).table_name := '';
     rec_array(idx).sql_name := 'GENERATE_TREE_CUSTOMERS [RELOAD_1156]';
     rec_array(idx).description := 'Перестроение дерева';
     rec_array(idx).execute_order := idx * 100;
