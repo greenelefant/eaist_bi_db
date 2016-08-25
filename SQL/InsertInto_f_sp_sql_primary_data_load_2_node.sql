@@ -148,7 +148,7 @@ END;#';
 
     -- SP_ORGANIZATION - UPD [LOAD_ORG_JOINT]
     idx := idx + 1;
-    rec_array(idx).table_name := 'SP_ORGANIZATION';
+    rec_array(idx).table_name := '';
     rec_array(idx).sql_name := 'SP_ORGANIZATION - UPD [LOAD_ORG_JOINT]';
     rec_array(idx).description := 'Блок update';
     rec_array(idx).execute_order := idx * 100;
@@ -329,7 +329,7 @@ END;#';
 
     -- SP_ORGANIZATION - UPDATE_IS_COMPLEX [EAIST2]
     idx := idx + 1;
-    rec_array(idx).table_name := 'SP_ORGANIZATION';
+    rec_array(idx).table_name := '';
     rec_array(idx).sql_name := 'SP_ORGANIZATION - UPDATE_IS_COMPLEX [EAIST2]';
     rec_array(idx).description := 'Обновление is_complex';
     rec_array(idx).execute_order := idx * 100;
@@ -349,7 +349,7 @@ END;#';
 
     -- SP_ORGANIZATION - BRANCH_ADJUSTMENT [EAIST2]
     idx := idx + 1;
-    rec_array(idx).table_name := 'SP_ORGANIZATION';
+    rec_array(idx).table_name := '';
     rec_array(idx).sql_name := 'SP_ORGANIZATION - BRANCH_ADJUSTMENT [EAIST2]';
     rec_array(idx).description := 'Корректировка дерева заказчиков (убрать, когда исправят в источнике)';
     rec_array(idx).execute_order := idx * 100;
@@ -456,7 +456,7 @@ END;#';
 
     -- SP_ORGANIZATION - AFTER_BRANCH_ADJUSTMENT [EAIST2]
     idx := idx + 1;
-    rec_array(idx).table_name := 'SP_ORGANIZATION';
+    rec_array(idx).table_name := '';
     rec_array(idx).sql_name := 'SP_ORGANIZATION - AFTER_BRANCH_ADJUSTMENT [EAIST2]';
     rec_array(idx).description := 'Обновление после корректировки веток';
     rec_array(idx).execute_order := idx * 100;
@@ -540,7 +540,7 @@ END;#';
 
     -- SP_CUSTOMER - UPDATE [EAIST2]
     idx := idx + 1;
-    rec_array(idx).table_name := 'SP_CUSTOMER';
+    rec_array(idx).table_name := '';
     rec_array(idx).sql_name := 'SP_CUSTOMER - UPDATE [EAIST2]';
     rec_array(idx).description := 'Блок обновления';
     rec_array(idx).execute_order := idx * 100;
@@ -753,7 +753,7 @@ END;#';
 
     -- SP_ORGANIZATION - UPDATE [PURCHASE_SMALL]
     idx := idx + 1;
-    rec_array(idx).table_name := 'SP_ORGANIZATION';
+    rec_array(idx).table_name := '';
     rec_array(idx).sql_name := 'SP_ORGANIZATION - UPDATE [PURCHASE_SMALL]';
     rec_array(idx).description := 'Блок update';
     rec_array(idx).execute_order := idx * 100;
@@ -1918,7 +1918,7 @@ END;#';
 
     -- SP_MER_CODE - PARENT_ID [EAIST2]
     idx := idx + 1;
-    rec_array(idx).table_name := 'SP_MER_CODE';
+    rec_array(idx).table_name := '';
     rec_array(idx).sql_name := 'SP_MER_CODE - PARENT_ID [EAIST2]';
     rec_array(idx).description := 'Обновление PARENT_ID';
     rec_array(idx).execute_order := idx * 100;
@@ -2024,7 +2024,7 @@ END;#';
 
     -- SP_KPGZ - DELETED_HIERARCHY [EAIST2]
     idx := idx + 1;
-    rec_array(idx).table_name := 'SP_KPGZ';
+    rec_array(idx).table_name := '';
     rec_array(idx).sql_name := 'SP_KPGZ - DELETED_HIERARCHY [EAIST2]';
     rec_array(idx).description := 'КПГЗ - иерархия удаленных';
     rec_array(idx).execute_order := idx * 100;
@@ -2051,7 +2051,7 @@ END;#';
 
     -- SP_KPGZ - 2,3 LVL [EAIST2]
     idx := idx + 1;
-    rec_array(idx).table_name := 'SP_KPGZ';
+    rec_array(idx).table_name := '';
     rec_array(idx).sql_name := 'SP_KPGZ - 2,3 LVL [EAIST2]';
     rec_array(idx).description := 'Простановка КПГЗ 2 и 3 уровня';
     rec_array(idx).execute_order := idx * 100;
@@ -2739,7 +2739,7 @@ END;#';
 
     -- T_LOT - WAS_PUBLISHED [EAIST2]
     idx := idx + 1;
-    rec_array(idx).table_name := 'T_LOT';
+    rec_array(idx).table_name := '';
     rec_array(idx).sql_name := 'T_LOT - WAS_PUBLISHED [EAIST2]';
     rec_array(idx).description := 'Обновление was_published';
     rec_array(idx).execute_order := idx * 100;
@@ -2762,7 +2762,7 @@ END;#';
 
     -- T_LOT - PUBLICATION DATES [EAIST2]
     idx := idx + 1;
-    rec_array(idx).table_name := 'T_LOT';
+    rec_array(idx).table_name := '';
     rec_array(idx).sql_name := 'T_LOT - PUBLICATION DATES [EAIST2]';
     rec_array(idx).description := 'Обновление publication_date';
     rec_array(idx).execute_order := idx * 100;
@@ -3318,7 +3318,7 @@ END;#';
 
     -- T_PURCHASE - WAS_PUBLISHED [EAIST2]
     idx := idx + 1;
-    rec_array(idx).table_name := 'T_PURCHASE';
+    rec_array(idx).table_name := '';
     rec_array(idx).sql_name := 'T_PURCHASE - WAS_PUBLISHED [EAIST2]';
     rec_array(idx).description := 'Обновление was_published';
     rec_array(idx).execute_order := idx * 100;
@@ -3537,7 +3537,7 @@ END;#';
 
     -- T_PURCHASE_DETAILED - WAS_PUBLISHED [EAIST2]
     idx := idx + 1;
-    rec_array(idx).table_name := 'T_PURCHASE_DETAILED';
+    rec_array(idx).table_name := '';
     rec_array(idx).sql_name := 'T_PURCHASE_DETAILED - WAS_PUBLISHED [EAIST2]';
     rec_array(idx).description := 'Обновление was_published';
     rec_array(idx).execute_order := idx * 100;
@@ -3609,7 +3609,7 @@ END;#';
     
     -- T_PURCHASE_LIMIT - PURCHASE_SUM [EAIST2]
     idx := idx + 1;
-    rec_array(idx).table_name := 'T_PURCHASE_LIMIT';
+    rec_array(idx).table_name := '';
     rec_array(idx).sql_name := 'T_PURCHASE_LIMIT - PURCHASE_SUM [EAIST2]';
     rec_array(idx).description := 'Обновление purchase_sum';
     rec_array(idx).execute_order := idx * 100;
@@ -4987,7 +4987,7 @@ END;#';
 
     -- T_CONTRACT - PLAN_DATE [EAIST2]
     idx := idx + 1;
-    rec_array(idx).table_name := 'T_CONTRACT';
+    rec_array(idx).table_name := '';
     rec_array(idx).sql_name := 'T_CONTRACT - PLAN_DATE [EAIST2]';
     rec_array(idx).description := 'Обновление плановой даты исполнения у контракта';
     rec_array(idx).execute_order := idx * 100;
@@ -5051,7 +5051,7 @@ END;#';
 
     -- T_CONTRACT - IS_VIOLATION_EXEC [EAIST2]
     idx := idx + 1;
-    rec_array(idx).table_name := 'T_CONTRACT';
+    rec_array(idx).table_name := '';
     rec_array(idx).sql_name := 'T_CONTRACT - IS_VIOLATION_EXEC [EAIST2]';
     rec_array(idx).description := 'Обновление флага is_violation_exec';
     rec_array(idx).execute_order := idx * 100;
@@ -5073,7 +5073,7 @@ END;#';
 
     -- T_CONTRACT - END_DATE [EAIST2]
     idx := idx + 1;
-    rec_array(idx).table_name := 'T_CONTRACT';
+    rec_array(idx).table_name := '';
     rec_array(idx).sql_name := 'T_CONTRACT - END_DATE [EAIST2]';
     rec_array(idx).description := 'Определение даты расторжения';
     rec_array(idx).execute_order := idx * 100;
@@ -5192,7 +5192,7 @@ END;#';
 
     -- T_CONTRACT - ID_REASONTYPE [EAIST2]
     idx := idx + 1;
-    rec_array(idx).table_name := 'T_CONTRACT';
+    rec_array(idx).table_name := '';
     rec_array(idx).sql_name := 'T_CONTRACT - ID_REASONTYPE [EAIST2]';
     rec_array(idx).description := 'Определение причины расторжения';
     rec_array(idx).execute_order := idx * 100;
@@ -5380,7 +5380,7 @@ END;#';
 
     -- LNK_LOT_LOT - INCLUDED_JOINT_AUCTION [EAIST2]
     idx := idx + 1;
-    rec_array(idx).table_name := 'T_LOT';
+    rec_array(idx).table_name := '';
     rec_array(idx).sql_name := 'T_LOT - INCLUDED_JOINT_AUCTION [EAIST2]';
     rec_array(idx).description := 'Обновление included_joint_auction';
     rec_array(idx).execute_order := idx * 100;
@@ -5401,7 +5401,7 @@ END;#';
 
 	-- LNK_LOT_LOT - IS_UNION_TRADE [EAIST2]
     idx := idx + 1;
-    rec_array(idx).table_name := 'T_TENDER';
+    rec_array(idx).table_name := '';
     rec_array(idx).sql_name := 'T_TENDER - IS_UNION_TRADE[EAIST2]';
     rec_array(idx).description := 'Обновление is_union_trade';
     rec_array(idx).execute_order := idx * 100;
@@ -5811,7 +5811,7 @@ END;#';
 
     -- T_PURCHASE - KPGZ [EAIST2]
     idx := idx + 1;
-    rec_array(idx).table_name := 'T_PURCHASE';
+    rec_array(idx).table_name := '';
     rec_array(idx).sql_name := 'T_PURCHASE - KPGZ [EAIST2]';
     rec_array(idx).description := 'Изменение КПГЗ на актуальный';
     rec_array(idx).execute_order := idx * 100;
@@ -5835,7 +5835,7 @@ END;#';
 
     -- T_PURCHASE_DETAILED_SPEC - KPGZ [EAIST2]
     idx := idx + 1;
-    rec_array(idx).table_name := 'T_PURCHASE_DETAILED_SPEC';
+    rec_array(idx).table_name := '';
     rec_array(idx).sql_name := 'T_PURCHASE_DETAILED_SPEC - KPGZ [EAIST2]';
     rec_array(idx).description := 'Изменение КПГЗ на актуальный';
     rec_array(idx).execute_order := idx * 100;
@@ -5859,7 +5859,7 @@ END;#';
 
     -- LNK_CONTRACT_KPGZ - KPGZ [EAIST2]
     idx := idx + 1;
-    rec_array(idx).table_name := 'LNK_CONTRACT_KPGZ';
+    rec_array(idx).table_name := '';
     rec_array(idx).sql_name := 'LNK_CONTRACT_KPGZ - KPGZ [EAIST2]';
     rec_array(idx).description := 'Изменение КПГЗ на актуальный';
     rec_array(idx).execute_order := idx * 100;
@@ -6163,7 +6163,7 @@ END;#';
 
     -- T_LOT - PUBLICATION DATES [EAIST1]
     idx := idx + 1;
-    rec_array(idx).table_name := 'T_LOT';
+    rec_array(idx).table_name := '';
     rec_array(idx).sql_name := 'T_LOT - PUBLICATION DATES [EAIST1]';
     rec_array(idx).description := 'Обновление publication_date';
     rec_array(idx).execute_order := idx * 100;
@@ -7010,7 +7010,7 @@ END;#';
 
     -- SP_KPGZ - 2,3 LVL [EAIST1]
     idx := idx + 1;
-    rec_array(idx).table_name := 'SP_KPGZ';
+    rec_array(idx).table_name := '';
     rec_array(idx).sql_name := 'SP_KPGZ - 2,3 LVL [EAIST1]';
     rec_array(idx).description := 'Простановка КПГЗ 2 и 3 уровня';
     rec_array(idx).execute_order := idx * 100;
@@ -7177,7 +7177,7 @@ END;#';
 
     -- T_LOT - MAXIMUM_CONTRACT_COST [EAIST1]
     idx := idx + 1;
-    rec_array(idx).table_name := 'T_LOT';
+    rec_array(idx).table_name := '';
     rec_array(idx).sql_name := 'T_LOT - MAXIMUM_CONTRACT_COST [EAIST1]';
     rec_array(idx).description := 'MAXIMUM_CONTRACT_COST из TENDER_SS';
     rec_array(idx).execute_order := idx * 100;
@@ -7447,7 +7447,7 @@ END;#';
 
     -- SP_KPGZ - 2,3 LVL [PURCHASE_SMALL]
     idx := idx + 1;
-    rec_array(idx).table_name := 'SP_KPGZ';
+    rec_array(idx).table_name := '';
     rec_array(idx).sql_name := 'SP_KPGZ - 2,3 LVL [PURCHASE_SMALL]';
     rec_array(idx).description := 'Простановка КПГЗ 2 и 3 уровня';
     rec_array(idx).execute_order := idx * 100;
@@ -7994,7 +7994,7 @@ END;#';
 
     -- SP_KPGZ_MERGE [EAIST2]
     idx := idx + 1;
-    rec_array(idx).table_name := 'SP_KPGZ';
+    rec_array(idx).table_name := '';
     rec_array(idx).sql_name := 'SP_KPGZ_MERGE [EAIST2]';
     rec_array(idx).description := 'Обновление для задачи ускорения загрузки view SP_KPGZ_TREE_V';
     rec_array(idx).execute_order := idx * 100;
@@ -8148,7 +8148,7 @@ END;#';
 
 -- SP_CUSTOMER [EAIST2]
     idx := idx + 1;
-    rec_array(idx).table_name := 'SP_CUSTOMER';
+    rec_array(idx).table_name := '';
     rec_array(idx).sql_name := 'SP_CUSTOMER - UPD [LOAD_ORG_JOINT_1156]';
     rec_array(idx).description := 'Связка заказчиков е1 с е2 руками через LNK_CUSTOMERS_E1_E2_IMP';
     rec_array(idx).execute_order := idx * 100;
@@ -8167,7 +8167,7 @@ END;#';
 
 -- SP_CUSTOMER [EAIST2]
     idx := idx + 1;
-    rec_array(idx).table_name := 'SP_CUSTOMER';
+    rec_array(idx).table_name := '';
     rec_array(idx).sql_name := 'SP_CUSTOMER-1 [CLEAN_1156]';
     rec_array(idx).description := 'Чистка справочника заказчиков';
     rec_array(idx).execute_order := idx * 100;
@@ -8199,7 +8199,7 @@ END;#';
 
 -- SP_CUSTOMER [EAIST1]
     idx := idx + 1;
-    rec_array(idx).table_name := 'SP_CUSTOMER';
+    rec_array(idx).table_name := '';
     rec_array(idx).sql_name := 'SP_CUSTOMER-2 [CLEAN_1156]';
     rec_array(idx).description := 'Чистка справочника заказчиков';
     rec_array(idx).execute_order := idx * 100;
@@ -8224,7 +8224,7 @@ END;#';
 
 -- SP_CUSTOMER [EAIST1]
     idx := idx + 1;
-    rec_array(idx).table_name := 'SP_CUSTOMER';
+    rec_array(idx).table_name := '';
     rec_array(idx).sql_name := 'SP_CUSTOMER-3 [CLEAN_1156]';
     rec_array(idx).description := 'Чистка справочника заказчиков';
     rec_array(idx).execute_order := idx * 100;
@@ -8247,7 +8247,7 @@ END;#';
 
 -- SP_ORGANIZATION_JOINT
     idx := idx + 1;
-    rec_array(idx).table_name := 'SP_ORGANIZATION_JOINT';
+    rec_array(idx).table_name := '';
     rec_array(idx).sql_name := 'SP_ORGANIZATION_JOINT [RELOAD_1156]';
     rec_array(idx).description := 'Перезагрузка сводного справочника заказчиков и поставщиков';
     rec_array(idx).execute_order := idx * 100;
@@ -8544,7 +8544,7 @@ END;#';
 
 -- SP_CUSTOMER [EAIST1]
     idx := idx + 1;
-    rec_array(idx).table_name := 'SP_CUSTOMER';
+    rec_array(idx).table_name := '';
     rec_array(idx).sql_name := 'SP_CUSTOMER-4 [CLEAN_1156]';
     rec_array(idx).description := 'Чистка справочника заказчиков';
     rec_array(idx).execute_order := idx * 100;
@@ -8568,7 +8568,7 @@ END;#';
 
 -- LNK_CUSTOMERS_UNITED [EAIST2]
     idx := idx + 1;
-    rec_array(idx).table_name := 'LNK_CUSTOMERS_UNITED';
+    rec_array(idx).table_name := '';
     rec_array(idx).sql_name := 'LNK_CUSTOMERS_UNITED [RELOAD_1156]';
     rec_array(idx).description := 'Перезагрузка связей между заказчиками и объединенными заказчиками';
     rec_array(idx).execute_order := idx * 100;
@@ -8636,7 +8636,7 @@ END;#';
 
 -- SP_CUSTOMERS_TREE
     idx := idx + 1;
-    rec_array(idx).table_name := 'SP_CUSTOMERS_TREE';
+    rec_array(idx).table_name := '';
     rec_array(idx).sql_name := 'SP_CUSTOMERS_TREE [RELOAD_1156]';
     rec_array(idx).description := 'Перезагрузка сводного дерева заказчиков';
     rec_array(idx).execute_order := idx * 100;
@@ -8702,7 +8702,7 @@ END;#';
 
 -- LNK_CUSTOMERS_ALL_LEVEL
     idx := idx + 1;
-    rec_array(idx).table_name := 'LNK_CUSTOMERS_ALL_LEVEL';
+    rec_array(idx).table_name := '';
     rec_array(idx).sql_name := 'LNK_CUSTOMERS_ALL_LEVEL [RELOAD_1156]';
     rec_array(idx).description := 'Перезагрузка связей объединенных заказчиков';
     rec_array(idx).execute_order := idx * 100;
@@ -8727,6 +8727,29 @@ END;#';
           ) soj
           connect BY PRIOR id =id_parent )
         where id<>ID_FIRST;
+
+		-- Привязка кол-ва обработанных строк
+		:V_ROWCOUNT := sql%rowcount;
+
+END;#';
+
+-- SP_CUSTOMERS_TREE
+    idx := idx + 1;
+    rec_array(idx).table_name := '';
+    rec_array(idx).sql_name := 'SP_CUSTOMERS_TREE [CLEAN_1156]';
+    rec_array(idx).description := 'Чистка сводного дерева заказчиков';
+    rec_array(idx).execute_order := idx * 100;
+    rec_array(idx).id_data_source := 1;
+    rec_array(idx).is_actual := 1;
+    rec_array(idx).sql_text := start_str || q'#
+	--правка дерева, заказчики по е1, которые не имеют подведов в объединенном справочнике и не имеют контрактов с финансированием на budget_year>=2014        
+    delete from SP_CUSTOMERS_TREE c where version_date=V_VERSION_DATE and id_source=V_ID_DATA_SOURCE
+    and not exists(select * from SP_CUSTOMERS_TREE o where o.version_date=c.version_date and o.id_source=c.id_source and o.id_parent=c.id)
+    and not exists(select * from SP_ORGANIZATION_JOINT j where j.version_date=c.version_date and j.id_eaist2 is not null and j.id_eaist1=c.id)
+    and not exists(select * from T_CONTRACT con
+                                             join t_finansing_contracts fc on fc.version_date=CON.VERSION_DATE and con.id_data_source=fc.id_data_source and con.id=fc.id_contract
+                                              where con.version_date=c.version_date and con.id_data_source=c.id_source and c.id=ID_CUSTOMER and fc.budget_year>=2014);
+                                              
 
 		-- Привязка кол-ва обработанных строк
 		:V_ROWCOUNT := sql%rowcount;
@@ -8768,30 +8791,6 @@ END;#';
 		:V_ROWCOUNT := sql%rowcount;
 
 END;#';
-
--- SP_CUSTOMERS_TREE
-    idx := idx + 1;
-    rec_array(idx).table_name := 'SP_CUSTOMERS_TREE';
-    rec_array(idx).sql_name := 'SP_CUSTOMERS_TREE [CLEAN_1156]';
-    rec_array(idx).description := 'Чистка сводного дерева заказчиков';
-    rec_array(idx).execute_order := idx * 100;
-    rec_array(idx).id_data_source := 1;
-    rec_array(idx).is_actual := 1;
-    rec_array(idx).sql_text := start_str || q'#
-	--правка дерева, заказчики по е1, которые не имеют подведов в объединенном справочнике и не имеют контрактов с финансированием на budget_year>=2014        
-    delete from SP_CUSTOMERS_TREE c where version_date=V_VERSION_DATE and id_source=V_ID_DATA_SOURCE
-    and not exists(select * from SP_CUSTOMERS_TREE o where o.version_date=c.version_date and o.id_source=c.id_source and o.id_parent=c.id)
-    and not exists(select * from SP_ORGANIZATION_JOINT j where j.version_date=c.version_date and j.id_eaist2 is not null and j.id_eaist1=c.id)
-    and not exists(select * from T_CONTRACT con
-                                             join t_finansing_contracts fc on fc.version_date=CON.VERSION_DATE and con.id_data_source=fc.id_data_source and con.id=fc.id_contract
-                                              where con.version_date=c.version_date and con.id_data_source=c.id_source and c.id=ID_CUSTOMER and fc.budget_year>=2014);
-                                              
-
-		-- Привязка кол-ва обработанных строк
-		:V_ROWCOUNT := sql%rowcount;
-
-END;#';
-
 
     -- Вставка запросов
     for i in 1..rec_array.count loop
