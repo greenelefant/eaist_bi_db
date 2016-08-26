@@ -8136,13 +8136,10 @@ END;#';
     rec_array(idx).sql_name := 'LNK_CUSTOMERS_E1_E2_IMP [LOAD_ORG_JOINT_1156]';
     rec_array(idx).description := 'Связка заказчиков е1 с е2';
     rec_array(idx).execute_order := idx * 100;
-    rec_array(idx).id_data_source := 1;
     rec_array(idx).is_actual := 1;
     rec_array(idx).sql_text := start_str || q'#
-		for c in (select * from lnk_customers_e1_e2_imp) 
-				loop
-					update sp_customer set inn=c.e2_inn, kpp=c.e2_kpp where inn=c.e1_inn and kpp=c.e1_kpp and id_data_source=V_ID_DATA_SOURCE and version_date=V_VERSION_DATE; 
-				end loop;   
+			
+			insert into lnk_customers_e1_e2_imp ( select * from lnk_customers_e1_e2_imp@REPORTS1);
 
 		-- Привязка кол-ва обработанных строк
 		:V_ROWCOUNT := sql%rowcount;
