@@ -1751,6 +1751,8 @@ END;#';
         INSERT INTO REPORTS.SP_STATUS_CATEGORY (ID, CODE, DESCRIPTION, NAME, ID_DATA_SOURCE, VERSION_DATE) VALUES (16, '', 'Статусы процедур закупок', 'Статусы процедур закупок', V_ID_DATA_SOURCE, V_VERSION_DATE);
         INSERT INTO REPORTS.SP_STATUS_CATEGORY (ID, CODE, DESCRIPTION, NAME, ID_DATA_SOURCE, VERSION_DATE) VALUES (17, '', 'Состояние процедур закупок', 'Состояние процедур закупок', V_ID_DATA_SOURCE, V_VERSION_DATE);
         INSERT INTO REPORTS.SP_STATUS_CATEGORY (ID, CODE, DESCRIPTION, NAME, ID_DATA_SOURCE, VERSION_DATE) VALUES (18, '', 'Cостояние участников торгов', 'Cостояние участников торгов', V_ID_DATA_SOURCE, V_VERSION_DATE);
+		INSERT INTO REPORTS.SP_STATUS_CATEGORY (ID, CODE, DESCRIPTION, NAME, ID_DATA_SOURCE, VERSION_DATE) VALUES (100, '', 'Cостояние заявок на экспертизу НМЦ', 'Cостояние заявок на экспертизу НМЦ', V_ID_DATA_SOURCE, V_VERSION_DATE);
+
 
     -- Привязка кол-ва обработанных строк
     :V_ROWCOUNT := SQL%ROWCOUNT;
@@ -1878,6 +1880,18 @@ END;#';
           INSERT INTO REPORTS.SP_STATUS (ID,CODE,NAME,id_category,ID_DATA_SOURCE,VERSION_DATE) VALUES (4,'DENIED','Не допущен',18,V_ID_DATA_SOURCE,V_VERSION_DATE);
           INSERT INTO REPORTS.SP_STATUS (ID,CODE,NAME,id_category,ID_DATA_SOURCE,VERSION_DATE) VALUES (5,'ACCORDANCE','Допущен',18,V_ID_DATA_SOURCE,V_VERSION_DATE);
 
+		--Состояние заявки на экспертизу НМЦ=100
+		  INSERT INTO REPORTS.SP_STATUS (ID,CODE,NAME,id_category,ID_DATA_SOURCE,VERSION_DATE) VALUES (1,'','Анализ рыночных цен',100,V_ID_DATA_SOURCE,V_VERSION_DATE);		
+		  INSERT INTO REPORTS.SP_STATUS (ID,CODE,NAME,id_category,ID_DATA_SOURCE,VERSION_DATE) VALUES (2,'','Анализ цен, содержащихся в реестре контрактов',100,V_ID_DATA_SOURCE,V_VERSION_DATE);		  
+		  INSERT INTO REPORTS.SP_STATUS (ID,CODE,NAME,id_category,ID_DATA_SOURCE,VERSION_DATE) VALUES (3,'','Нормативный',100,V_ID_DATA_SOURCE,V_VERSION_DATE);
+		  INSERT INTO REPORTS.SP_STATUS (ID,CODE,NAME,id_category,ID_DATA_SOURCE,VERSION_DATE) VALUES (4,'','Тарифный',100,V_ID_DATA_SOURCE,V_VERSION_DATE);
+		  INSERT INTO REPORTS.SP_STATUS (ID,CODE,NAME,id_category,ID_DATA_SOURCE,VERSION_DATE) VALUES (5,'','Удельных показателей',100,V_ID_DATA_SOURCE,V_VERSION_DATE);
+		  INSERT INTO REPORTS.SP_STATUS (ID,CODE,NAME,id_category,ID_DATA_SOURCE,VERSION_DATE) VALUES (6,'','Иной',100,V_ID_DATA_SOURCE,V_VERSION_DATE);
+		  INSERT INTO REPORTS.SP_STATUS (ID,CODE,NAME,id_category,ID_DATA_SOURCE,VERSION_DATE) VALUES (7,'','Проектно-сметный',100,V_ID_DATA_SOURCE,V_VERSION_DATE);
+		  INSERT INTO REPORTS.SP_STATUS (ID,CODE,NAME,id_category,ID_DATA_SOURCE,VERSION_DATE) VALUES (8,'','Затратный',100,V_ID_DATA_SOURCE,V_VERSION_DATE);
+		  INSERT INTO REPORTS.SP_STATUS (ID,CODE,NAME,id_category,ID_DATA_SOURCE,VERSION_DATE) VALUES (9,'','Анализ стоимости аналогов',100,V_ID_DATA_SOURCE,V_VERSION_DATE);
+		  INSERT INTO REPORTS.SP_STATUS (ID,CODE,NAME,id_category,ID_DATA_SOURCE,VERSION_DATE) VALUES (10,'','Параметрический',100,V_ID_DATA_SOURCE,V_VERSION_DATE);
+    
     -- Привязка кол-ва обработанных строк
     :V_ROWCOUNT := SQL%ROWCOUNT;
 
@@ -8750,6 +8764,24 @@ END;#';
                                              join t_finansing_contracts fc on fc.version_date=CON.VERSION_DATE and con.id_data_source=fc.id_data_source and con.id=fc.id_contract
                                               where con.version_date=c.version_date and con.id_data_source=c.id_source and c.id=ID_CUSTOMER and fc.budget_year>=2014);
                                               
+
+		-- Привязка кол-ва обработанных строк
+		:V_ROWCOUNT := sql%rowcount;
+
+END;#';
+
+-- T_USERS
+    idx := idx + 1;
+    rec_array(idx).table_name := 'T_USERS';
+    rec_array(idx).sql_name := 'T_USERS [EAIST2]';
+    rec_array(idx).description := 'Пользователи';
+    rec_array(idx).execute_order := idx * 100;
+    rec_array(idx).id_data_source := 2;
+    rec_array(idx).is_actual := 1;
+    rec_array(idx).sql_text := start_str || q'#
+
+	insert into t_users (id, login, surname, user_name, patronymic, subdivision, active, email, job_name, position, phone, fio, id_data_source, version_date)
+	select id, login, surname, user_name, patronymic, subdivision, active, email, job_name, position, phone, fio, v_id_Data_source, v_version_date from s_users@eaist_Mos_users;
 
 		-- Привязка кол-ва обработанных строк
 		:V_ROWCOUNT := sql%rowcount;
