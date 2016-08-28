@@ -805,7 +805,7 @@ END;#';
 
     -- SP_CUSTOMER - GRBS [PURCHASE_SMALL]
     idx := idx + 1;
-    rec_array(idx).table_name := 'SP_CUSTOMER';
+    rec_array(idx).table_name := '';
     rec_array(idx).sql_name := 'SP_CUSTOMER - GRBS [PURCHASE_SMALL]';
     rec_array(idx).description := 'Простановка кодов ГРБС';
     rec_array(idx).execute_order := idx * 100;
