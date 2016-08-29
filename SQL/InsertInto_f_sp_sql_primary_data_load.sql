@@ -3498,7 +3498,20 @@ END;#';
                                       ON lpe.DETAILED_PURCHASE_ID=dpv.ID 
                            LEFT JOIN (select ldp.*, row_number() over (partition by ldp.detailed_purchase_id order by case when stat.status_id=5 then 100 else 10 end desc, stat.status_date desc ) rn 
                                         from D_LOT_DPURCHASE_ENTRY@EAIST_MOS_SHARD ldp 
-                                        inner join (select id from d_lot_version@EAIST_MOS_SHARD where deleted_date IS NULL) lv on ldp.lot_id = lv.id
+                                        inner join ( select id from d_lot_version@EAIST_MOS_SHARD where deleted_date IS NULL
+                                            UNION ALL
+                                          select lv.id
+                                          from d_lot_entity@eaist_mos_shard le
+                                          inner join (select id, entity_id from d_lot_version@EAIST_MOS_SHARD where deleted_date IS NOT NULL and STATUS_ID=5
+                                          ) lv on le.id=lv.entity_id
+                                          inner join d_lot_entity@eaist_mos_shard lep on le.id=lep.published_id
+                                          inner join (select id, entity_id from d_lot_version@EAIST_MOS_SHARD where deleted_date IS NULL) lvp on lep.id=lvp.entity_id
+                                          left join d_lot_lot_entry@eaist_mos_shard lle on  lvp.id=lle.lot_id and lle.is_actual = 1
+                                          left join D_PROCEDURE_LOT_ENTRY@EAIST_MOS_SHARD ple on nvl(lle.root_lot_id,lvp.id)=ple.lot_id and ple.IS_ACTUAL = 1
+                                          left join (select id, entity_id, status_id, deleted_date from D_PROCEDURE_VERSION@eaist_mos_shard) pv on ple.Procedure_id=pv.id and pv.deleted_date is null
+                                          left join D_PROCEDURE_ENTITY@eaist_mos_shard pe on pe.id=pv.entity_id and pe.deleted_date is null 
+                                          where (pe.published_id is not null and pv.status_id not in (7,18))
+                                        ) lv on ldp.lot_id = lv.id
                                         JOIN D_LOT_STATUS_HISTORY@EAIST_MOS_SHARD stat ON lv.id=stat.version_id
                                         where ldp.is_actual = 1 
                                       ) ldpe ON dpv.id = ldpe.DETAILED_PURCHASE_ID and ldpe.rn=1
