@@ -3696,22 +3696,9 @@ END;#';
         st := replace(st, ':V_ID_DATA_SOURCE', V_ID_DATA_SOURCE);
         st := replace(st, ':V_VERSION_DATE', to_char(V_VERSION_DATE, 'DD.MM.YYYY'));
         execute immediate st;
-
-    -- Привязка кол-ва обработанных строк
-    :V_ROWCOUNT := SQL%ROWCOUNT;
-
-END;#';
-
-    -- T_PURCHASE_DETAILED_LIMIT - SUB1 [EAIST2]
-    idx := idx + 1;
-    rec_array(idx).table_name := 'T_PURCHASE_DETAILED_LIMIT';
-    rec_array(idx).sql_name := 'T_PURCHASE_DETAILED_LIMIT - SUB1 [EAIST2]';
-    rec_array(idx).description := 'Лимиты для детализированных объектов закупок (ДОЗ) - заполнение временной таблицы';
-    rec_array(idx).execute_order := idx * 100;
-    rec_array(idx).id_data_source := 2;
-    rec_array(idx).is_actual := 1;
-    rec_array(idx).sql_text := start_str || q'#
-        INSERT INTO T_PURCHASE_DETAILED_LIMIT (ID,
+		
+	--заливаем данные из временной таблицы	
+        execute immediate 'INSERT INTO T_PURCHASE_DETAILED_LIMIT (ID,
                                                 PURCHASE_SUM,
                                                 DPURCHASE_ID,
                                                 LIMIT_CODE,
@@ -3720,26 +3707,12 @@ END;#';
                                                 FINANCING_SOURCE_ID,
                                                 ID_DATA_SOURCE,
                                                 VERSION_DATE)  
-           SELECT * FROM tmp_tpdl;
-
+           SELECT * FROM tmp_tpdl';
     -- Привязка кол-ва обработанных строк
     :V_ROWCOUNT := SQL%ROWCOUNT;
-
-END;#';
-
-    -- T_PURCHASE_DETAILED_LIMIT - SUB2 [EAIST2]
-    idx := idx + 1;
-    rec_array(idx).table_name := 'T_PURCHASE_DETAILED_LIMIT';
-    rec_array(idx).sql_name := 'T_PURCHASE_DETAILED_LIMIT - SUB2 [EAIST2]';
-    rec_array(idx).description := 'Лимиты для детализированных объектов закупок (ДОЗ) - удаление временной таблицы';
-    rec_array(idx).execute_order := idx * 100;
-    rec_array(idx).id_data_source := 2;
-    rec_array(idx).is_actual := 1;
-    rec_array(idx).sql_text := start_str || q'#
-        execute immediate('DROP TABLE tmp_tpdl');
-
-    -- Привязка кол-ва обработанных строк
-    :V_ROWCOUNT := SQL%ROWCOUNT;
+	
+	-- удаление временной таблицы
+	execute immediate('DROP TABLE tmp_tpdl');
 
 END;#';
 
